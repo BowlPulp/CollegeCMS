@@ -1,0 +1,13 @@
+.theme-light {
+  --primary: #222831;
+  --secondary: #393E46;
+  --accent: #FFD369;
+  --neutral: #EEEEEE;
+}
+
+.theme-dark {
+  --primary: #121212;
+  --secondary: #282828;
+  --accent: #BB86FC;
+  --neutral: #F5F5F5;
+}
