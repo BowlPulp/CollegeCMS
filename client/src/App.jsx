@@ -7,6 +7,7 @@ import { Route, Routes } from "react-router-dom"
 import StudentsList from "./pages/StudentsList"
 import TimeTable from "./pages/TimeTable"
 import NotFound404 from "./pages/NotFound404"
+import Loader from "./components/Loader"
 function App() {
 
   return (
@@ -18,7 +19,7 @@ function App() {
           <Route path="/students" element={<StudentsList />} />
           <Route path="/timetable" element={<TimeTable />} />
 
-          
+          <Route path="/load" element={<Loader/>} />
           <Route path="*" element={<NotFound404 />} />
         </Route>
 
