@@ -59,7 +59,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <span className="text-[var(--accent)] font-bold text-xl">BlindText</span>
+              <span className="text-[var(--accent)] font-bold text-xl">ChitkaraCMS</span>
             </div>
           </div>
 
@@ -141,7 +141,7 @@ export default function Navbar() {
   ) : (
     <>
       <Link to="/login" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
-      <Link to="/signup" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link>
+      {/* <Link to="/signup" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link> */}
     </>
   )}
 </div>
@@ -206,7 +206,7 @@ export default function Navbar() {
             <div className="pt-4 pb-3 border-t border-[var(--secondary)]">
               <div className="flex items-center px-5 space-x-2">
                 <Link to="/login" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
-                <Link to="/signup" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link>
+                {/* <Link to="/signup" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link> */}
               </div>
             </div>
           </div>
