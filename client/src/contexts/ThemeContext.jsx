@@ -3,7 +3,7 @@ import { createContext, useState, useContext, useEffect, useMemo } from 'react';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('default');
+  const [theme, setTheme] = useState('light'); // default theme
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('blindtext-theme');
@@ -13,16 +13,15 @@ export function ThemeProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.remove('theme-dark', 'theme-ocean', 'theme-forest');
-    if (theme !== 'default') {
-      document.documentElement.classList.add(`theme-${theme}`);
-    }
+    // Remove both possible classes before setting new one
+    document.documentElement.classList.remove('theme-light', 'theme-dark');
+    document.documentElement.classList.add(`theme-${theme}`);
     localStorage.setItem('blindtext-theme', theme);
   }, [theme]);
 
   const themes = {
-    default: {
-      name: 'Default',
+    light: {
+      name: 'Light',
       colors: {
         primary: '#222831',
         secondary: '#393E46',
@@ -37,24 +36,6 @@ export function ThemeProvider({ children }) {
         secondary: '#282828',
         accent: '#BB86FC',
         neutral: '#F5F5F5'
-      }
-    },
-    ocean: {
-      name: 'Ocean',
-      colors: {
-        primary: '#1A374D',
-        secondary: '#406882',
-        accent: '#6998AB',
-        neutral: '#B1D0E0'
-      }
-    },
-    forest: {
-      name: 'Forest',
-      colors: {
-        primary: '#1B4332',
-        secondary: '#2D6A4F',
-        accent: '#D8F3DC',
-        neutral: '#F1FAEE'
       }
     }
   };

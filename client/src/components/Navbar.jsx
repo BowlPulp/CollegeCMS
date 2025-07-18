@@ -15,13 +15,11 @@ export default function Navbar() {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleThemeMenu = () => setIsThemeMenuOpen(!isThemeMenuOpen);
 
-  const themes = ['default', 'dark', 'ocean', 'forest'];
+  const themes = ['light', 'dark'];
 
   const themeColors = {
-    default: '#4f46e5',
+    light: '#4f46e5',
     dark: '#111827',
-    ocean: '#0e7490',
-    forest: '#15803d',
   };
 
   const handleThemeChange = (newTheme) => {
