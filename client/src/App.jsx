@@ -8,6 +8,7 @@ import StudentsList from "./pages/StudentsList"
 import TimeTable from "./pages/TimeTable"
 import NotFound404 from "./pages/NotFound404"
 import Loader from "./components/Loader"
+import LoginPage from "./pages/LoginPage"
 function App() {
 
   return (
@@ -18,7 +19,7 @@ function App() {
           <Route path="/sheet" element={<SheetManager />} />
           <Route path="/students" element={<StudentsList />} />
           <Route path="/timetable" element={<TimeTable />} />
-
+          <Route path='/login' element={<LoginPage/>}/>
           <Route path="/load" element={<Loader/>} />
           <Route path="*" element={<NotFound404 />} />
         </Route>
