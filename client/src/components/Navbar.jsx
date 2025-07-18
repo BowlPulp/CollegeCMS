@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, ChevronDown, Palette } from 'lucide-react';
+import { Menu, X, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,27 +7,15 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const toggleThemeMenu = () => setIsThemeMenuOpen(!isThemeMenuOpen);
-
-  const themes = ['light', 'dark'];
-
-  const themeColors = {
-    light: '#4f46e5',
-    dark: '#111827',
+  
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
-
-  const handleThemeChange = (newTheme) => {
-    setTheme(newTheme);
-    setIsThemeMenuOpen(false);
-  };
-
-  const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
   const handleFeaturesClick = () => {
     if (location.pathname === '/') {
@@ -48,7 +36,6 @@ export default function Navbar() {
       }
     } else {
       navigate('/', {state:{ scrollToAbout: true}});
-    
     }
   };
 
@@ -67,7 +54,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             <a href="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</a>
             <button onClick={handleFeaturesClick} className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Features</button>
-            <a onClick={handleAboutClick} className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">About</a>
+            <button onClick={handleAboutClick} className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">About</button>
 
             {/* Resources Dropdown */}
             <div className="relative inline-block text-left">
@@ -92,97 +79,52 @@ export default function Navbar() {
           </div>
 
           {/* Theme + Auth buttons */}
-<div className="hidden md:flex items-center space-x-2">
-  {/* Theme Button */}
-  <div className="relative">
-    <button
-      onClick={toggleThemeMenu}
-      className="p-2 rounded-full hover:bg-[var(--secondary)] flex items-center justify-center"
-      aria-label="Select theme"
-      title={`Current theme: ${capitalize(theme)}`}
-    >
-      <Palette className="h-5 w-5 text-[var(--neutral)]" />
-    </button>
-
-    {isThemeMenuOpen && (
-      <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-[var(--secondary)] ring-1 ring-black ring-opacity-5 z-20">
-        <div className="py-1">
-          {themes.map((t) => (
+          <div className="hidden md:flex items-center space-x-2">
+            {/* Theme Toggle Button */}
             <button
-              key={t}
-              onClick={() => handleThemeChange(t)}
-              className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)] ${
-                theme === t ? 'bg-[var(--primary)] text-[var(--accent)]' : ''
-              }`}
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-[var(--secondary)] flex items-center justify-center transition-all duration-300"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+              title={`Current theme: ${theme === 'light' ? 'Light' : 'Dark'}`}
             >
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: themeColors[t] }}
-              ></span>
-              {capitalize(t)}
+              {theme === 'light' ? (
+                <Moon className="h-5 w-5 text-[var(--neutral)] hover:text-[var(--accent)] transition-colors duration-300" />
+              ) : (
+                <Sun className="h-5 w-5 text-[var(--neutral)] hover:text-[var(--accent)] transition-colors duration-300" />
+              )}
             </button>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
 
-  {isAuthenticated() ? (
-    <>
-      <Link to="/dashboard" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Dashboard</Link>
-    <button
-      onClick={logout}
-      className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm"
-      >
-      Log out
-    </button>
-      </>
-    
-  ) : (
-    <>
-      <Link to="/login" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
-      {/* <Link to="/signup" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link> */}
-    </>
-  )}
-</div>
-
+            {isAuthenticated() ? (
+              <>
+                <Link to="/dashboard" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Dashboard</Link>
+                <button
+                  onClick={logout}
+                  className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
+              </>
+            )}
+          </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
-            {/* Mobile Theme Button */}
-            <div className="relative">
-              <button
-                onClick={toggleThemeMenu}
-                className="p-2 mr-2 rounded-full hover:bg-[var(--secondary)] flex items-center justify-center"
-                aria-label="Select theme"
-              >
-                <Palette className="h-5 w-5 text-[var(--neutral)]" />
-              </button>
-
-              {isThemeMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-[var(--secondary)] ring-1 ring-black ring-opacity-5 z-20">
-                  <div className="py-1">
-                    {themes.map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => handleThemeChange(t)}
-                        className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)] ${
-                          theme === t ? 'bg-[var(--primary)] text-[var(--accent)]' : ''
-                        }`}
-                      >
-                        <div className="flex gap-1">
-                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: `var(--primary-${t})` }}></span>
-                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: `var(--secondary-${t})` }}></span>
-                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: `var(--neutral-${t})` }}></span>
-                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: `var(--accent-${t})` }}></span>
-                        </div>
-                        <span>{capitalize(t)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Mobile Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 mr-2 rounded-full hover:bg-[var(--secondary)] flex items-center justify-center transition-all duration-300"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            >
+              {theme === 'light' ? (
+                <Sun className="h-5 w-5 text-[var(--neutral)] hover:text-[var(--accent)] transition-colors duration-300" />
+              ) : (
+                <Moon className="h-5 w-5 text-[var(--neutral)] hover:text-[var(--accent)] transition-colors duration-300" />
               )}
-            </div>
+            </button>
 
             <button
               onClick={toggleMenu}
@@ -200,13 +142,24 @@ export default function Navbar() {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-[var(--primary)]">
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</Link>
             <button onClick={handleFeaturesClick} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Features</button>
-            <a href="#about" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">About</a>
+            <button onClick={handleAboutClick} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">About</button>
             <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Resources</a>
 
             <div className="pt-4 pb-3 border-t border-[var(--secondary)]">
               <div className="flex items-center px-5 space-x-2">
-                <Link to="/login" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
-                {/* <Link to="/signup" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--accent)] hover:bg-[var(--neutral)] font-medium text-sm">Sign up</Link> */}
+                {isAuthenticated() ? (
+                  <>
+                    <Link to="/dashboard" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Dashboard</Link>
+                    <button
+                      onClick={logout}
+                      className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <Link to="/login" className="w-full px-4 py-2 rounded-md text-[var(--primary)] bg-[var(--neutral)] hover:bg-[var(--accent)] font-medium text-sm">Log in</Link>
+                )}
               </div>
             </div>
           </div>

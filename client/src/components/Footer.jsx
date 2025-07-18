@@ -5,7 +5,7 @@ export default function Footer() {
   const { theme } = useTheme();
 
   return (
-    <footer className="bg-[var(--secondary)] border-t border-[var(--accent)]/20 py-8 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-[var(--secondary)] border-t border-[var(--accent)]/20 py-4 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           {/* Left - University Name with Logo */}
