@@ -121,7 +121,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] pt-16">
+    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] ">
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">

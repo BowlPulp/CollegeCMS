@@ -8,7 +8,10 @@ function HomeLayout() {
     <div>
         <Navbar/>
         {/* Render the nested routes for the User role */}
+        <div className='pt-16'>
+
         <Outlet />
+        </div>
        <Footer/>
       </div>
   );

@@ -17,28 +17,6 @@ export default function Navbar() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const handleFeaturesClick = () => {
-    if (location.pathname === '/') {
-      const section = document.getElementById('features');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      navigate('/', { state: { scrollToFeatures: true } });
-    }
-  };
-
-  const handleAboutClick = () => {
-    if(location.pathname === '/'){
-      const section = document.getElementById('about');
-      if(section){
-        section.scrollIntoView({behavior:'smooth'});
-      }
-    } else {
-      navigate('/', {state:{ scrollToAbout: true}});
-    }
-  };
-
   return (
     <nav className="bg-[var(--primary)] text-[var(--neutral)] shadow-md w-full fixed z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,9 +30,9 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-4">
-            <a href="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</a>
-            <button onClick={handleFeaturesClick} className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Features</button>
-            <button onClick={handleAboutClick} className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">About</button>
+            <Link to="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</Link>
+            <Link to='/students' className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Students List</Link>
+            <Link to='/timetable' className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Time Table</Link>
 
             {/* Resources Dropdown */}
             <div className="relative inline-block text-left">
@@ -70,8 +48,8 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[var(--secondary)] ring-1 ring-black ring-opacity-5 z-20">
                   <div className="py-1">
                     <a href="/sheet" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Sheets</a>
-                    <a href="/terms" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Terms of Service</a>
-                    <a href="/privacy-policy" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Privacy Policy</a>
+                    <a href="/chos" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">CHOs</a>
+                    <a href="/event-news" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Event News</a>
                   </div>
                 </div>
               )}
@@ -141,8 +119,8 @@ export default function Navbar() {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-[var(--primary)]">
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</Link>
-            <button onClick={handleFeaturesClick} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Features</button>
-            <button onClick={handleAboutClick} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">About</button>
+            <Link to='/students' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Students List</Link>
+            <Link to='/timetable' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">About</Link>
             <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Resources</a>
 
             <div className="pt-4 pb-3 border-t border-[var(--secondary)]">
