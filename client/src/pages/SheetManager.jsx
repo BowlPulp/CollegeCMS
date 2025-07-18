@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus } from 'lucide-react';
+import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText } from 'lucide-react';
 import SheetPreview from '../components/SheetPreview';
 
 export default function SheetManager() {
@@ -9,6 +9,9 @@ export default function SheetManager() {
   const [showForm, setShowForm] = useState(false);
   const [previewSheet, setPreviewSheet] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteOTP, setDeleteOTP] = useState('');
+  const [userOTP, setUserOTP] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -29,6 +32,11 @@ export default function SheetManager() {
   useEffect(() => {
     localStorage.setItem('uploaded-sheets', JSON.stringify(sheets));
   }, [sheets]);
+
+  // Generate random 6-digit OTP
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   // Validate Google Sheets URL
   const validateGoogleSheetsUrl = (url) => {
@@ -125,10 +133,42 @@ export default function SheetManager() {
     }
   };
 
+  // Handle delete confirmation
+  const handleDeleteConfirm = (sheetId) => {
+    const otp = generateOTP();
+    setDeleteOTP(otp);
+    setDeleteConfirm(sheetId);
+    setUserOTP('');
+    setOtpError('');
+  };
+
+  // Handle OTP input
+  const handleOTPChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only allow digits, max 6
+    setUserOTP(value);
+    if (otpError) {
+      setOtpError('');
+    }
+  };
+
+  // Prevent paste in OTP field
+  const handleOTPPaste = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
   // Handle delete sheet
-  const handleDelete = (sheetId) => {
-    setSheets(prev => prev.filter(sheet => sheet.id !== sheetId));
+  const handleDelete = () => {
+    if (userOTP !== deleteOTP) {
+      setOtpError('OTP does not match. Please try again.');
+      return;
+    }
+
+    setSheets(prev => prev.filter(sheet => sheet.id !== deleteConfirm));
     setDeleteConfirm(null);
+    setDeleteOTP('');
+    setUserOTP('');
+    setOtpError('');
   };
 
   // Handle preview
@@ -136,8 +176,11 @@ export default function SheetManager() {
     setPreviewSheet(sheet);
   };
 
+  // Get sheet to delete details
+  const sheetToDelete = sheets.find(sheet => sheet.id === deleteConfirm);
+
   return (
-    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8 ">
+    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto pt-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -270,7 +313,7 @@ export default function SheetManager() {
                     <Eye className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setDeleteConfirm(sheet.id)}
+                    onClick={() => handleDeleteConfirm(sheet.id)}
                     className="p-2 text-[var(--neutral)]/70 hover:text-red-500 transition-colors"
                     title="Delete"
                   >
@@ -333,25 +376,102 @@ export default function SheetManager() {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
+      {/* Delete Confirmation Modal with OTP */}
+      {deleteConfirm && sheetToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--secondary)] rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-[var(--neutral)] mb-4">
-              Delete Sheet
-            </h3>
-            <p className="text-[var(--neutral)]/70 mb-6">
+          <div className="bg-[var(--secondary)] rounded-xl p-6 max-w-lg w-full">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-6 w-6 text-red-500" />
+              <h3 className="text-lg font-semibold text-[var(--neutral)]">
+                Confirm Deletion
+              </h3>
+            </div>
+            
+            <p className="text-[var(--neutral)]/70 mb-4">
               Are you sure you want to delete this sheet? This action cannot be undone.
             </p>
+
+            {/* Sheet Details */}
+            <div className="bg-[var(--primary)] rounded-lg p-4 mb-6 border border-[var(--accent)]/20">
+              <div className="flex items-start gap-3">
+                <FileText className="h-5 w-5 text-[var(--accent)] mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-[var(--neutral)] mb-2 break-words">
+                    {sheetToDelete.title}
+                  </h4>
+                  <p className="text-sm text-[var(--neutral)]/70 mb-3 break-words">
+                    {sheetToDelete.description.length > 100 
+                      ? `${sheetToDelete.description.substring(0, 100)}...` 
+                      : sheetToDelete.description
+                    }
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-xs text-[var(--neutral)]/60">
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span>Uploaded by: {sheetToDelete.uploadedBy}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>Date: {new Date(sheetToDelete.uploadDate).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* OTP Display */}
+            <div className="bg-[var(--primary)] rounded-lg p-3 mb-4 border-2 border-[var(--accent)]/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-medium text-[var(--neutral)]">
+                    Verification Code:
+                  </p>
+                  <p className="text-lg font-mono font-bold text-[var(--accent)] tracking-widest">
+                    {deleteOTP}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* OTP Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                Enter the verification code:
+              </label>
+              <input
+                type="text"
+                value={userOTP}
+                onChange={handleOTPChange}
+                onPaste={handleOTPPaste}
+                className={`w-full px-4 py-2 rounded-lg border bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] font-mono text-xl tracking-widest text-center ${
+                  otpError ? 'border-red-500' : 'border-[var(--accent)]/30'
+                }`}
+                placeholder="000000"
+                maxLength={6}
+              />
+              {otpError && (
+                <p className="text-red-500 text-sm mt-1">{otpError}</p>
+              )}
+              <p className="text-xs text-[var(--neutral)]/60 mt-2">
+                Type the 6-digit code above. Paste is disabled for security.
+              </p>
+            </div>
+
             <div className="flex gap-4">
               <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                onClick={handleDelete}
+                disabled={userOTP.length !== 6}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete
+                Delete Sheet
               </button>
               <button
-                onClick={() => setDeleteConfirm(null)}
+                onClick={() => {
+                  setDeleteConfirm(null);
+                  setDeleteOTP('');
+                  setUserOTP('');
+                  setOtpError('');
+                }}
                 className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors"
               >
                 Cancel
