@@ -69,7 +69,7 @@ export default function Navbar() {
               {isMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[var(--secondary)] ring-1 ring-black ring-opacity-5 z-20">
                   <div className="py-1">
-                    <a href="/contact" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Contact</a>
+                    <a href="/sheet" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Sheets</a>
                     <a href="/terms" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Terms of Service</a>
                     <a href="/privacy-policy" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Privacy Policy</a>
                   </div>
