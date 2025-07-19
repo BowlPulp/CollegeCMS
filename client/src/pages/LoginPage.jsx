@@ -1,14 +1,40 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import useAuthStore from "../store/authStore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [formError, setFormError] = useState("");
+  const login = useAuthStore((s) => s.login);
+  const loading = useAuthStore((s) => s.loading);
+  const error = useAuthStore((s) => s.error);
+  const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Logging in:", { email, password });
+    setFormError("");
+    console.log("Attempting login with:", { identifier: email, password });
+    try {
+      const res = await login(email, password);
+      console.log("Login response:", res);
+      if (res?.data?.role === "admin") {
+        console.log("Redirecting to /admin/home");
+        navigate("/admin/home");
+      } else if (res?.data?.role === "teacher") {
+        console.log("Redirecting to /timetable");
+        navigate("/timetable");
+      } else {
+        console.log("Redirecting to /");
+        navigate("/");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setFormError(error || "Login failed");
+    }
   };
 
   return (
@@ -38,9 +64,9 @@ export default function Login() {
         <form onSubmit={handleLogin} className="space-y-5">
           {/* Email */}
           <div>
-            <label className="block mb-1 text-sm">Email</label>
+            <label className="block mb-1 text-sm">Email or Staff ID</label>
             <input
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -49,6 +75,7 @@ export default function Login() {
                 backgroundColor: "var(--neutral)",
                 color: "var(--primary)",
               }}
+              placeholder="Enter email or staff ID"
             />
           </div>
 
@@ -77,6 +104,11 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Error */}
+          {(formError || error) && (
+            <div className="text-red-500 text-sm text-center">{formError || error}</div>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
@@ -85,8 +117,9 @@ export default function Login() {
               backgroundColor: "var(--accent)",
               color: "var(--neutral)",
             }}
+            disabled={loading}
           >
-            Sign In
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
