@@ -12,6 +12,7 @@ import LoginPage from "./pages/LoginPage"
 import useAuthStore from "./store/authStore"
 import Profile from "./pages/Profile";
 import AdminLayout from "./layouts/AdminLayout";
+import ManageStudents from "./pages/admin/ManageStudents";
 
 
 // PrivateRoute for role-based protection
@@ -50,7 +51,7 @@ function App() {
       {/* Admin routes with AdminNavbar */}
       <Route element={<PrivateRoute allowedRoles={["admin"]}><AdminLayout /></PrivateRoute>}>
         <Route path="/admin/home" element={<HomePage />} />
-        <Route path="/admin/manage-students" element={<div className='p-8 text-center text-xl'>Manage Students (Admin Only)</div>} />
+        <Route path="/admin/manage-students" element={<ManageStudents />} />
         <Route path="/admin/manage-teachers" element={<div className='p-8 text-center text-xl'>Manage Teachers (Admin Only)</div>} />
       </Route>
       {/* All authenticated routes with normal Navbar */}
