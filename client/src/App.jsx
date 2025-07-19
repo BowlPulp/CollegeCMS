@@ -3,54 +3,68 @@ import Navbar from "./components/Navbar"
 import HomeLayout from "./layouts/HomeLayout"
 import HomePage from "./pages/HomePage"
 import SheetManager from "./pages/SheetManager"
-import { Route, Routes, Navigate } from "react-router-dom"
+import { Route, Routes, Navigate, Outlet } from "react-router-dom"
 import StudentsList from "./pages/StudentsList"
 import TimeTable from "./pages/TimeTable"
 import NotFound404 from "./pages/NotFound404"
 import Loader from "./components/Loader"
 import LoginPage from "./pages/LoginPage"
 import useAuthStore from "./store/authStore"
-import AdminHome from "./pages/admin/AdminHome"
 import Profile from "./pages/Profile";
+import AdminLayout from "./layouts/AdminLayout";
+
 
 // PrivateRoute for role-based protection
 function PrivateRoute({ children, allowedRoles }) {
   const user = useAuthStore((s) => s.user);
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // If not allowed, redirect to home or a not-authorized page
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
   return children;
 }
 
-function App() {
+// Layout that only renders children if user is logged in
+function AuthenticatedLayout() {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return <Navigate to="/" replace />;
   return (
     <>
-      <Routes>
-        <Route element={<HomeLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/sheet" element={<SheetManager />} />
-          <Route path="/students" element={<StudentsList />} />
-          <Route path="/timetable" element={<TimeTable />} />
-          <Route path='/login' element={<LoginPage/>}/>
-          <Route path="/load" element={<Loader/>} />
-          <Route path="/profile" element={
-            <PrivateRoute allowedRoles={["admin", "teacher"]}>
-              <Profile />
-            </PrivateRoute>
-          } />
-          {/* Admin-only route */}
-          <Route path="/admin/home" element={
-            <PrivateRoute allowedRoles={"admin"}>
-              <AdminHome/>
-            </PrivateRoute>
-          } />
-          <Route path="*" element={<NotFound404 />} />
-        </Route>
-      </Routes>
+      <Navbar />
+      <HomeLayout>
+        <Outlet />
+      </HomeLayout>
+      <Footer />
     </>
-  )
+  );
 }
 
-export default App
+function App() {
+  const user = useAuthStore((s) => s.user);
+  return (
+    <Routes>
+      {/* Login page at /, only for unauthenticated users */}
+      <Route path="/" element={
+        !user ? <LoginPage /> : <Navigate to="/home" replace />
+      } />
+      {/* Admin routes with AdminNavbar */}
+      <Route element={<PrivateRoute allowedRoles={["admin"]}><AdminLayout /></PrivateRoute>}>
+        <Route path="/admin/home" element={<HomePage />} />
+        <Route path="/admin/manage-students" element={<div className='p-8 text-center text-xl'>Manage Students (Admin Only)</div>} />
+        <Route path="/admin/manage-teachers" element={<div className='p-8 text-center text-xl'>Manage Teachers (Admin Only)</div>} />
+      </Route>
+      {/* All authenticated routes with normal Navbar */}
+      <Route element={<AuthenticatedLayout />}>
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/sheet" element={<SheetManager />} />
+        <Route path="/students" element={<StudentsList />} />
+        <Route path="/timetable" element={<TimeTable />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/load" element={<Loader />} />
+        <Route path="*" element={<NotFound404 />} />
+      </Route>
+    </Routes>
+  );
+}
+
+export default App;

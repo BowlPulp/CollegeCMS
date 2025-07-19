@@ -21,16 +21,10 @@ export default function Login() {
     try {
       const res = await login(email, password);
       console.log("Login response:", res);
-      if (res?.data?.role === "admin") {
-        console.log("Redirecting to /admin/home");
-        navigate("/admin/home");
-      } else if (res?.data?.role === "teacher") {
-        console.log("Redirecting to /timetable");
-        navigate("/timetable");
-      } else {
-        console.log("Redirecting to /");
-        navigate("/");
-      }
+     
+        console.log("Redirecting to /home");
+        navigate("/home");
+      
     } catch (err) {
       console.error("Login error:", err);
       setFormError(error || "Login failed");

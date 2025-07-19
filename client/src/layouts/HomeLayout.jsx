@@ -1,19 +1,13 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import { Outlet } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
-function HomeLayout() {
+function HomeLayout({ children }) {
+  const user = useAuthStore((s) => s.user);
   return (
-    <div>
-        <Navbar/>
-        {/* Render the nested routes for the User role */}
-        <div className='pt-16'>
-
-        <Outlet />
-        </div>
-       <Footer/>
-      </div>
+    <div className={`min-h-screen ${user ? 'pt-16' : ''}`}>
+      {children || <Outlet />}
+    </div>
   );
 }
 

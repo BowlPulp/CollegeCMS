@@ -70,9 +70,7 @@ const login = asyncHandler(async (req, res, next) => {
     .cookie('token', token, {
       httpOnly: true,
       sameSite: 'None',
-      httpOnly: true,
       secure: true,
-      sameSite: "None"
     })
     .status(200)
     .json(new ApiResponse(200, { staff }, 'Login successful'));
@@ -100,8 +98,9 @@ const me = asyncHandler(async (req, res, next) => {
 const logout = asyncHandler(async (req, res, next) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
     sameSite: 'None',
+    secure: true,
+    expires: new Date(0), // Expire immediately
   });
   res.status(200).json(new ApiResponse(200, null, 'Logged out successfully'));
 });

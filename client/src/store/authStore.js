@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axios from '../api/axios';
+import Cookies from 'js-cookie';
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -30,16 +31,22 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  logout: async () => {
-    set({ loading: true, error: null });
-    try {
-      await axios.post('/api/auth/staff/logout');
-      set({ user: null, loading: false, error: null });
-    } catch (err) {
-      set({ error: err.response?.data?.message || 'Logout failed', loading: false, user: null });
-      throw err;
+ logout: async () => {
+  set({ loading: true, error: null });
+  try {
+    await axios.post('/api/auth/staff/logout');
+    Cookies.remove('token');
+    set({ user: null, loading: false, error: null });
+    // Optional: Force reload to ensure clean state
+    if (typeof window !== 'undefined') {
+      window.location.reload();
     }
-  },
+  } catch (err) {
+    set({ error: err.response?.data?.message || 'Logout failed', loading: false, user: null });
+    throw err;
+  }
+},
+
 
   restoreSession: async () => {
     set({ loading: true, error: null });
