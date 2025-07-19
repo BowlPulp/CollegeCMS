@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./db/db');
+const { ApiResponse } = require('./utils/ApiResponse');
+const { ApiError } = require('./utils/ApiError');
 
 // Load environment variables
 dotenv.config();
@@ -18,23 +20,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+// Root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running successfully!' });
+  res.status(200).json(new ApiResponse(200, null, 'Server is running successfully!'));
 });
 
 // Add your routes here
+app.use('/api/auth/staff', require('./routers/auth.router'));
 // app.use('/api/users', require('./routes/users'));
-// app.use('/api/auth', require('./routes/auth'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  if (err instanceof ApiError) {
+    res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors || [],
+      data: err.data || null
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong!',
+      errors: [err.message],
+      data: null
+    });
+  }
 });
 
 // Handle 404 routes
 app.use('*any', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  res.status(404).json(new ApiResponse(404, null, 'Route not found'));
 });
 
 // Start server
