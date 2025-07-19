@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./db/db');
 const { ApiResponse } = require('./utils/ApiResponse');
 const { ApiError } = require('./utils/ApiError');
+const cookieParser = require('cookie-parser');
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Routes
 // Root route

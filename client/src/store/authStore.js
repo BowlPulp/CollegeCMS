@@ -40,6 +40,21 @@ const useAuthStore = create((set) => ({
       throw err;
     }
   },
+
+  restoreSession: async () => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get('/api/auth/staff/me');
+      set({ user: res.data.data, loading: false });
+    } catch (err) {
+      set({ user: null, loading: false });
+    }
+  },
 }));
+
+// Restore session on app load
+if (typeof window !== 'undefined') {
+  useAuthStore.getState().restoreSession();
+}
 
 export default useAuthStore; 

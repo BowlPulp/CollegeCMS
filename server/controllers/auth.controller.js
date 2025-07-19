@@ -66,7 +66,34 @@ const login = asyncHandler(async (req, res, next) => {
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '1d' }
   );
-  res.status(200).json(new ApiResponse(200, { token, staff }, 'Login successful'));
+  res
+    .cookie('token', token, {
+      httpOnly: true,
+      sameSite: 'None',
+      httpOnly: true,
+      secure: true,
+      sameSite: "None"
+    })
+    .status(200)
+    .json(new ApiResponse(200, { staff }, 'Login successful'));
 });
 
-module.exports = { register, login };
+// Get current user from cookie
+const me = asyncHandler(async (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    throw new ApiError(401, 'No token provided');
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const staff = await Staff.findById(decoded.id).select('-password -otp');
+    if (!staff) {
+      throw new ApiError(404, 'User not found');
+    }
+    res.status(200).json(new ApiResponse(200, staff, 'User session valid'));
+  } catch (err) {
+    throw new ApiError(401, 'Invalid or expired token');
+  }
+});
+
+module.exports = { register, login, me };
