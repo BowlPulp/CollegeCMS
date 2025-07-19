@@ -96,4 +96,14 @@ const me = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { register, login, me };
+// Logout controller
+const logout = asyncHandler(async (req, res, next) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'None',
+  });
+  res.status(200).json(new ApiResponse(200, null, 'Logged out successfully'));
+});
+
+module.exports = { register, login, me, logout };

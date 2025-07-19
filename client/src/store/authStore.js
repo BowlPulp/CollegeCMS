@@ -34,9 +34,9 @@ const useAuthStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       await axios.post('/api/auth/staff/logout');
-      set({ user: null, loading: false });
+      set({ user: null, loading: false, error: null });
     } catch (err) {
-      set({ error: err.response?.data?.message || 'Logout failed', loading: false });
+      set({ error: err.response?.data?.message || 'Logout failed', loading: false, user: null });
       throw err;
     }
   },
