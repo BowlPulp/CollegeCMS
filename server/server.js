@@ -33,6 +33,7 @@ app.get('/', (req, res) => {
 // Add your routes here
 app.use('/api/auth/staff', require('./routers/auth.router'));
 // app.use('/api/users', require('./routes/users'));
+app.use('/api/otp', require('./routers/otp.router'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

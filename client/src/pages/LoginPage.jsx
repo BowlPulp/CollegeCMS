@@ -14,6 +14,10 @@ export default function Login() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
+  const handleReset = () =>{
+    navigate('/reset');
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -33,7 +37,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 -mt-36"
+      className="min-h-screen flex items-center justify-center px-4 "
       style={{ backgroundColor: "var(--primary)", color: "var(--neutral)" }}
     >
       <div
@@ -120,7 +124,7 @@ export default function Login() {
         {/* Optional Footer */}
         <p className="text-sm mt-6 text-center text-gray-300">
           Forgot Password?{" "}
-          <span
+          <span onClick={handleReset}
             className="underline cursor-pointer"
             style={{ color: "var(--accent)" }}
           >
