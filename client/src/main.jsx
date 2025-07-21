@@ -10,11 +10,11 @@ import ScrollToTop from './components/ScrollToTop.jsx'
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <AuthProvider>
+    {/* <AuthProvider> */}
   <ThemeProvider>
     <App />
     <ScrollToTop/>
   </ThemeProvider>
-    </AuthProvider>
+    {/* </AuthProvider> */}
   </BrowserRouter>,
 )

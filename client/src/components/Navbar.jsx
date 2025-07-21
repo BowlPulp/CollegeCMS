@@ -53,9 +53,9 @@ export default function Navbar() {
             {isMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[var(--secondary)] ring-1 ring-black ring-opacity-5 z-20">
                 <div className="py-1">
-                  <a href="/sheet" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Sheets</a>
-                  <a href="/chos" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">CHOs</a>
-                  <a href="/event-news" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Event News</a>
+                  <Link to="/sheet" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Sheets</Link>
+                  <Link to="/chos" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">CHOs</Link>
+                  <Link to="/event-news" className="block px-4 py-2 text-sm hover:bg-[var(--primary)] hover:text-[var(--accent)]">Event News</Link>
                 </div>
               </div>
             )}
