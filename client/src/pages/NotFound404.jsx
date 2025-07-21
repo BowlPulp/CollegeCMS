@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 export default function NotFound404() {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center text-center px-6 -mt-36"
+      className="min-h-screen flex flex-col items-center justify-center text-center px-6"
       style={{
         backgroundColor: "var(--primary)",
         color: "var(--neutral)",

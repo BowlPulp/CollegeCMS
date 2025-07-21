@@ -64,8 +64,8 @@ function App() {
         <Route path="/timetable" element={<TimeTable />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/load" element={<Loader />} />
-        <Route path="*" element={<NotFound404 />} />
       </Route>
+        <Route path="*" element={<NotFound404 />} />
     </Routes>
   );
 }
