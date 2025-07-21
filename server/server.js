@@ -5,7 +5,6 @@ const connectDB = require('./db/db');
 const { ApiResponse } = require('./utils/ApiResponse');
 const { ApiError } = require('./utils/ApiError');
 const cookieParser = require('cookie-parser');
-
 // Load environment variables
 dotenv.config();
 
@@ -36,6 +35,7 @@ app.use('/api/auth/staff', require('./routers/auth.router'));
 app.use('/api/otp', require('./routers/otp.router'));
 app.use('/api/sheets', require('./routers/sheet.router'));
 
+app.use('/api/events', require('./routers/event.router'));
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

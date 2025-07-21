@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import AdminLayout from "./layouts/AdminLayout";
 import ManageStudents from "./pages/admin/ManageStudents";
 import ResetPasswordPage from "./pages/ResetPasswordPage"
+import EventNewsPage from "./pages/EventNewsPage"
 
 
 // PrivateRoute for role-based protection
@@ -64,6 +65,7 @@ function App() {
         <Route path="/timetable" element={<TimeTable />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/load" element={<Loader />} />
+        <Route path='/event-news' element={<EventNewsPage/>}/>
       </Route>
         <Route path="*" element={<NotFound404 />} />
     </Routes>
