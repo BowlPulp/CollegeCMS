@@ -34,6 +34,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth/staff', require('./routers/auth.router'));
 // app.use('/api/users', require('./routes/users'));
 app.use('/api/otp', require('./routers/otp.router'));
+app.use('/api/sheets', require('./routers/sheet.router'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

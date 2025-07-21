@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText } from 'lucide-react';
 import SheetPreview from '../components/SheetPreview';
+import axios from '../api/axios';
+import useAuthStore from '../store/authStore';
 
 export default function SheetManager() {
   const { theme } = useTheme();
+  const user = useAuthStore((s) => s.user);
   const [sheets, setSheets] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [previewSheet, setPreviewSheet] = useState(null);
@@ -19,19 +22,23 @@ export default function SheetManager() {
   });
   const [formErrors, setFormErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [apiLoading, setApiLoading] = useState(false);
 
-  // Load sheets from localStorage on component mount
+  // Load sheets from backend on mount
   useEffect(() => {
-    const savedSheets = localStorage.getItem('uploaded-sheets');
-    if (savedSheets) {
-      setSheets(JSON.parse(savedSheets));
-    }
+    const fetchSheets = async () => {
+      setApiLoading(true);
+      try {
+        const res = await axios.get('/api/sheets');
+        setSheets(res.data);
+      } catch (err) {
+        // Optionally handle error
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    fetchSheets();
   }, []);
-
-  // Save sheets to localStorage whenever sheets change
-  useEffect(() => {
-    localStorage.setItem('uploaded-sheets', JSON.stringify(sheets));
-  }, [sheets]);
 
   // Generate random 6-digit OTP
   const generateOTP = () => {
@@ -96,27 +103,21 @@ export default function SheetManager() {
     }
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newSheet = {
-        id: Date.now().toString(),
+      const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         originalLink: formData.link.trim(),
         embeddableLink: convertToEmbeddableUrl(formData.link.trim()),
-        uploadedBy: 'devtester',
-        userId: '123456',
-        uploadDate: new Date().toISOString(),
-        createdAt: new Date().toLocaleString()
+        uploadedBy: user?.name || user?.username || 'Unknown',
+        userId: user?._id || user?.id || 'unknown',
       };
-
-      setSheets(prev => [newSheet, ...prev]);
+      const res = await axios.post('/api/sheets', payload);
+      setSheets(prev => [res.data, ...prev]);
       setFormData({ title: '', description: '', link: '' });
       setFormErrors({});
       setShowForm(false);
     } catch (error) {
-      setFormErrors({ submit: 'Failed to upload sheet. Please try again.' });
+      setFormErrors({ submit: error.response?.data?.message || 'Failed to upload sheet. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -158,17 +159,21 @@ export default function SheetManager() {
   };
 
   // Handle delete sheet
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (userOTP !== deleteOTP) {
       setOtpError('OTP does not match. Please try again.');
       return;
     }
-
-    setSheets(prev => prev.filter(sheet => sheet.id !== deleteConfirm));
-    setDeleteConfirm(null);
-    setDeleteOTP('');
-    setUserOTP('');
-    setOtpError('');
+    try {
+      await axios.delete(`/api/sheets/${deleteConfirm}`);
+      setSheets(prev => prev.filter(sheet => sheet._id !== deleteConfirm));
+      setDeleteConfirm(null);
+      setDeleteOTP('');
+      setUserOTP('');
+      setOtpError('');
+    } catch (err) {
+      setOtpError('Failed to delete sheet.');
+    }
   };
 
   // Handle preview
@@ -177,7 +182,7 @@ export default function SheetManager() {
   };
 
   // Get sheet to delete details
-  const sheetToDelete = sheets.find(sheet => sheet.id === deleteConfirm);
+  const sheetToDelete = sheets.find(sheet => (sheet._id || sheet.id) === deleteConfirm);
 
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
