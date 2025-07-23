@@ -34,6 +34,7 @@ app.use('/api/auth/staff', require('./routers/auth.router'));
 // app.use('/api/users', require('./routes/users'));
 app.use('/api/otp', require('./routers/otp.router'));
 app.use('/api/sheets', require('./routers/sheet.router'));
+app.use('/api/students', require('./routers/student.router'));
 
 app.use('/api/events', require('./routers/event.router'));
 // Error handling middleware
