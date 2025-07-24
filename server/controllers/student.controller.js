@@ -71,4 +71,63 @@ exports.deleteStudent = asyncHandler(async (req, res) => {
   const student = await Student.findByIdAndDelete(id);
   if (!student) throw new ApiError(404, 'Student not found');
   res.status(200).json(new ApiResponse(200, null, 'Student deleted successfully'));
+});
+
+// Get all unique filter values
+exports.getStudentFilters = asyncHandler(async (req, res) => {
+  const fields = [
+    'branch',
+    'updatedGroup',
+    'cluster',
+    'specialization',
+    'campus',
+    'finalStatus'
+  ];
+  const filters = {};
+  for (const field of fields) {
+    filters[field] = await Student.distinct(field);
+  }
+  res.status(200).json(new ApiResponse(200, filters, 'Filter options'));
+});
+
+// Paginated, filtered, and searched student list
+exports.listStudents = asyncHandler(async (req, res) => {
+  let {
+    page = 1,
+    limit = 20,
+    branch,
+    updatedGroup,
+    cluster,
+    specialization,
+    campus,
+    finalStatus,
+    search
+  } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+  const filter = {};
+  if (branch) filter.branch = branch;
+  if (updatedGroup) filter.updatedGroup = updatedGroup;
+  if (cluster) filter.cluster = cluster;
+  if (specialization) filter.specialization = specialization;
+  if (campus) filter.campus = campus;
+  if (finalStatus !== undefined && finalStatus !== '') filter.finalStatus = finalStatus === 'true';
+  if (search) {
+    filter.$or = [
+      { studentName: { $regex: search, $options: 'i' } },
+      { universityRollNumber: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
+    ];
+  }
+  const total = await Student.countDocuments(filter);
+  const students = await Student.find(filter)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+  res.status(200).json(new ApiResponse(200, {
+    students,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+  }, 'Student list'));
 }); 

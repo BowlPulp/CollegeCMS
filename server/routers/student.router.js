@@ -12,6 +12,10 @@ router.post('/upload', studentController.uploadStudents);
 router.get('/search', studentController.searchStudents);
 // Filter students
 router.get('/filter', studentController.filterStudents);
+// Get filter options
+router.get('/filters', studentController.getStudentFilters);
+// Paginated, filtered, and searched student list
+router.get('/list', studentController.listStudents);
 // Get a single student by ID
 router.get('/:id', studentController.getStudent);
 // Delete a student by ID

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from '../../contexts/ThemeContext';
 import { 
   Users, 
@@ -14,6 +14,7 @@ import {
   Filter,
   Download
 } from 'lucide-react';
+import axios from '../../api/axios';
 
 const ManageStudents = () => {
   const { theme } = useTheme();
@@ -23,44 +24,187 @@ const ManageStudents = () => {
   const [jsonInput, setJsonInput] = useState("");
   const [excelFile, setExcelFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Sample student data for the manage tab
-  const [students] = useState([
-    { id: 1, name: "John Doe", email: "john@example.com", rollNo: "CSE001", class: "CSE-A", status: "Active" },
-    { id: 2, name: "Jane Smith", email: "jane@example.com", rollNo: "CSE002", class: "CSE-A", status: "Active" },
-    { id: 3, name: "Mike Johnson", email: "mike@example.com", rollNo: "CSE003", class: "CSE-B", status: "Inactive" }
-  ]);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    rollNo: '',
-    class: ''
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [searching, setSearching] = useState(false);
+  const observer = useRef();
+  // Add these missing states:
+  const [filters, setFilters] = useState({
+    branch: '',
+    updatedGroup: '',
+    cluster: '',
+    specialization: '',
+    campus: '',
+    finalStatus: ''
   });
+  const [filterOptions, setFilterOptions] = useState({
+    branch: [],
+    updatedGroup: [],
+    cluster: [],
+    specialization: [],
+    campus: [],
+    finalStatus: []
+  });
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    studentName: '',
+    email: '',
+    universityRollNumber: '',
+    updatedGroup: '',
+    campus: '',
+    branch: '',
+    cluster: '',
+    specialization: '',
+    newVendor: '',
+    finalStatus: false,
+    remarks: '',
+    motherName: '',
+    fatherName: '',
+    parentsMobile: '',
+    mobNumber: ''
+  });
+  const [showFilter, setShowFilter] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Fetch filter options on mount
+  useEffect(() => {
+    axios.get('/api/students/filters').then(res => {
+      setFilterOptions(res.data.data);
+    });
+  }, []);
+
+  // Fetch students (paginated, filtered)
+  const fetchStudents = useCallback(async (reset = false, customPage = 1, customFilters = filters) => {
+    setLoading(true);
+    try {
+      const params = { ...customFilters, page: customPage, limit: 20 };
+      const res = await axios.get('/api/students/list', { params });
+      const newStudents = res.data.data.students;
+      setStudents(prev => reset ? newStudents : [...prev, ...newStudents]);
+      setHasMore(res.data.data.page < res.data.data.totalPages);
+      setPage(res.data.data.page);
+    } catch (err) {
+      if (reset) setStudents([]);
+      setHasMore(false);
+    }
+    setLoading(false);
+  }, [filters]);
+
+  // Initial and filter change load
+  useEffect(() => {
+    setPage(1);
+    fetchStudents(true, 1, filters);
+  }, [filters, fetchStudents]);
+
+  // Infinite scroll observer
+  const lastStudentRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new window.IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !searching) {
+        fetchStudents(false, page + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore, page, fetchStudents, searching]);
+
+  // Search logic (local first, then API if not found)
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setSearching(true);
+    // Local search
+    const localResults = students.filter(s =>
+      (s.studentName && s.studentName.toLowerCase().includes(searchInput.toLowerCase())) ||
+      (s.universityRollNumber && s.universityRollNumber.toLowerCase().includes(searchInput.toLowerCase())) ||
+      (s.email && s.email.toLowerCase().includes(searchInput.toLowerCase()))
+    );
+    if (localResults.length > 0) {
+      setStudents(localResults);
+      setHasMore(false);
+      setSearching(false);
+      setSearchTerm(searchInput);
+      return;
+    }
+    // API search
+    setLoading(true);
+    try {
+      const params = { ...filters, search: searchInput, page: 1, limit: 20 };
+      const res = await axios.get('/api/students/list', { params });
+      setStudents(res.data.data.students);
+      setHasMore(res.data.data.page < res.data.data.totalPages);
+      setPage(res.data.data.page);
+      setSearchTerm(searchInput);
+    } catch (err) {
+      setStudents([]);
+      setHasMore(false);
+    }
+    setLoading(false);
+    setSearching(false);
   };
 
-  const handleSubmit = (e) => {
+  // Reset search
+  const handleResetSearch = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setPage(1);
+    fetchStudents(true, 1, filters);
+  };
+
+  // Add one student
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Add your form submission logic here
+    try {
+      await axios.post('/api/students', formData);
+      setFormData({
+        studentName: '', email: '', universityRollNumber: '', updatedGroup: '', campus: '', branch: '', cluster: '', specialization: '', newVendor: '', finalStatus: false, remarks: '', motherName: '', fatherName: '', parentsMobile: '', mobNumber: ''
+      });
+      fetchStudents();
+      alert('Student added successfully!');
+    } catch (err) {
+      alert('Failed to add student.');
+    }
+  };
+
+  // Bulk add students from JSON
+  const handleBulkJson = async () => {
+    try {
+      const studentsArr = JSON.parse(jsonInput);
+      await axios.post('/api/students/upload', { students: studentsArr });
+      setJsonInput("");
+      fetchStudents();
+      alert('Bulk students added!');
+    } catch (err) {
+      alert('Bulk add failed. Check your JSON.');
+    }
+  };
+
+  // Delete student
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this student?')) return;
+    try {
+      await axios.delete(`/api/students/${id}`);
+      fetchStudents();
+    } catch (err) {
+      alert('Delete failed.');
+    }
   };
 
   const sampleJsonFormat = `[
   {
-    "name": "John Doe",
+    "studentName": "John Doe",
     "email": "john@example.com",
-    "rollNo": "CSE001",
-    "class": "CSE-A"
+    "universityRollNumber": "CSE001"
   },
   {
-    "name": "Jane Smith",
+    "studentName": "Jane Smith",
     "email": "jane@example.com",
-    "rollNo": "CSE002",
-    "class": "CSE-A"
+    "universityRollNumber": "CSE002"
   }
 ]`;
 
@@ -152,8 +296,8 @@ const ManageStudents = () => {
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={formData.name}
+                      name="studentName"
+                      value={formData.studentName}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
                       placeholder="Enter student name"
@@ -176,12 +320,12 @@ const ManageStudents = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
-                      Roll Number *
+                      University Roll Number *
                     </label>
                     <input
                       type="text"
-                      name="rollNo"
-                      value={formData.rollNo}
+                      name="universityRollNumber"
+                      value={formData.universityRollNumber}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
                       placeholder="Enter roll number"
@@ -190,16 +334,158 @@ const ManageStudents = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
-                      Class *
+                      Mobile Number
                     </label>
                     <input
                       type="text"
-                      name="class"
-                      value={formData.class}
+                      name="mobNumber"
+                      value={formData.mobNumber}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
-                      placeholder="Enter class"
-                      required
+                      placeholder="Enter mobile number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Group
+                    </label>
+                    <input
+                      type="text"
+                      name="updatedGroup"
+                      value={formData.updatedGroup}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter group"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Campus
+                    </label>
+                    <input
+                      type="text"
+                      name="campus"
+                      value={formData.campus}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter campus"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Branch
+                    </label>
+                    <input
+                      type="text"
+                      name="branch"
+                      value={formData.branch}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter branch"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Cluster
+                    </label>
+                    <input
+                      type="text"
+                      name="cluster"
+                      value={formData.cluster}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter cluster"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Specialization
+                    </label>
+                    <input
+                      type="text"
+                      name="specialization"
+                      value={formData.specialization}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter specialization"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      New Vendor
+                    </label>
+                    <input
+                      type="text"
+                      name="newVendor"
+                      value={formData.newVendor}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter new vendor"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Final Status
+                    </label>
+                    <input
+                      type="checkbox"
+                      name="finalStatus"
+                      checked={formData.finalStatus}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    <span className="text-[var(--neutral)]">Finalized</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Remarks
+                    </label>
+                    <input
+                      type="text"
+                      name="remarks"
+                      value={formData.remarks}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter remarks"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Mother Name
+                    </label>
+                    <input
+                      type="text"
+                      name="motherName"
+                      value={formData.motherName}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter mother name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Father Name
+                    </label>
+                    <input
+                      type="text"
+                      name="fatherName"
+                      value={formData.fatherName}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter father name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--neutral)]">
+                      Parents Mobile
+                    </label>
+                    <input
+                      type="text"
+                      name="parentsMobile"
+                      value={formData.parentsMobile}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg border bg-[var(--secondary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
+                      placeholder="Enter parents mobile"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -261,7 +547,7 @@ const ManageStudents = () => {
                       value={jsonInput}
                       onChange={e => setJsonInput(e.target.value)}
                     />
-                    <button className="mt-4 px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors flex items-center gap-2">
+                    <button type="button" onClick={handleBulkJson} className="mt-4 px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors flex items-center gap-2">
                       <Database className="h-4 w-4" />
                       Add Students from JSON
                     </button>
@@ -325,16 +611,108 @@ const ManageStudents = () => {
                 <input
                   type="text"
                   placeholder="Search students..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  onKeyPress={e => {
+                    if (e.key === 'Enter') {
+                      handleSearch(e);
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
                 />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--neutral)]/70 hover:text-[var(--accent)]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x-circle"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                  </button>
+                )}
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={handleResetSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--neutral)]/70 hover:text-[var(--accent)]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  </button>
+                )}
               </div>
-              <button className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2">
+              <button type="button" onClick={() => setShowFilter(true)} className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2">
                 <Filter className="h-4 w-4" />
                 Filter
               </button>
             </div>
+
+            {/* Filter Modal */}
+            {showFilter && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="bg-[var(--secondary)] rounded-xl p-6 w-full max-w-md shadow-lg relative">
+                  <button onClick={() => setShowFilter(false)} className="absolute top-2 right-2 text-[var(--neutral)]/60 hover:text-[var(--accent)] text-xl">&times;</button>
+                  <h3 className="text-lg font-semibold mb-4 text-[var(--neutral)]">Filter Students</h3>
+                  <form onSubmit={e => { e.preventDefault(); fetchStudents(true, 1, filters); setShowFilter(false); }} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Branch</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.branch} onChange={e => setFilters(f => ({ ...f, branch: e.target.value }))} >
+                        <option value="">Any</option>
+                        {filterOptions.branch.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Group</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.updatedGroup} onChange={e => setFilters(f => ({ ...f, updatedGroup: e.target.value }))} >
+                        <option value="">Any</option>
+                        {filterOptions.updatedGroup.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Cluster</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.cluster} onChange={e => setFilters(f => ({ ...f, cluster: e.target.value }))} >
+                        <option value="">Any</option>
+                        {filterOptions.cluster.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Specialization</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.specialization} onChange={e => setFilters(f => ({ ...f, specialization: e.target.value }))} >
+                        <option value="">Any</option>
+                        {filterOptions.specialization.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Campus</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.campus} onChange={e => setFilters(f => ({ ...f, campus: e.target.value }))} >
+                        <option value="">Any</option>
+                        {filterOptions.campus.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Final Status</label>
+                      <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.finalStatus} onChange={e => setFilters(f => ({ ...f, finalStatus: e.target.value }))}>
+                        <option value="">Any</option>
+                        <option value="true">Finalized</option>
+                        <option value="false">Pending</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button type="button" onClick={() => { setFilters({ branch: '', updatedGroup: '', cluster: '', specialization: '', campus: '', finalStatus: '' }); fetchStudents(true, 1, filters); setShowFilter(false); }} className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors">Clear</button>
+                      <button type="submit" className="px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors">Apply</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {/* Students Table */}
             <div className="overflow-x-auto">
@@ -344,25 +722,31 @@ const ManageStudents = () => {
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Name</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Email</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Roll No</th>
-                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Class</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Group</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Branch</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Status</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map((student) => (
-                    <tr key={student.id} className="border-b border-[var(--accent)]/10 hover:bg-[var(--primary)] transition-colors">
-                      <td className="py-3 px-4 text-[var(--neutral)]">{student.name}</td>
+                  {loading ? (
+                    <tr><td colSpan={7} className="text-center py-6">Loading...</td></tr>
+                  ) : students.length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-6">No students found.</td></tr>
+                  ) : students.map((student, index) => (
+                    <tr key={student._id} className="border-b border-[var(--accent)]/10 hover:bg-[var(--primary)] transition-colors" ref={students.length === index + 1 ? lastStudentRef : null}>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.studentName}</td>
                       <td className="py-3 px-4 text-[var(--neutral)]/70">{student.email}</td>
-                      <td className="py-3 px-4 text-[var(--neutral)]">{student.rollNo}</td>
-                      <td className="py-3 px-4 text-[var(--neutral)]">{student.class}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.universityRollNumber}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.updatedGroup}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.branch}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          student.status === 'Active' 
+                          student.finalStatus
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
-                          {student.status}
+                          {student.finalStatus ? 'Finalized' : 'Pending'}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -373,7 +757,7 @@ const ManageStudents = () => {
                           <button className="p-1 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors">
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button className="p-1 text-[var(--neutral)]/70 hover:text-red-500 transition-colors">
+                          <button className="p-1 text-[var(--neutral)]/70 hover:text-red-500 transition-colors" onClick={() => handleDelete(student._id)}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -387,7 +771,7 @@ const ManageStudents = () => {
             {/* Pagination would go here */}
             <div className="flex justify-between items-center mt-6">
               <p className="text-[var(--neutral)]/70">
-                Showing 3 of 3 students
+                Showing {students.length} student{students.length !== 1 ? 's' : ''}
               </p>
               <div className="flex gap-2">
                 {/* Add pagination buttons here */}
