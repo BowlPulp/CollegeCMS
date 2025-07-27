@@ -35,13 +35,13 @@ app.use('/api/auth/staff', require('./routers/auth.router'));
 app.use('/api/otp', require('./routers/otp.router'));
 app.use('/api/sheets', require('./routers/sheet.router'));
 app.use('/api/students', require('./routers/student.router'));
-
+app.use('/api/chos', require('./routers/cho.router'));
 app.use('/api/events', require('./routers/event.router'));
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   if (err instanceof ApiError) {
-    res.status(err.statusCode).json({
+    res.status(err.statusCode).json({ 
       success: false,
       message: err.message,
       errors: err.errors || [],
