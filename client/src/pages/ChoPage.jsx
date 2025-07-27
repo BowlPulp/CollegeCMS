@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Trash2, Plus } from 'lucide-react';
+import { Upload, FileText, Trash2, Plus, Eye } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 
@@ -10,6 +10,7 @@ export default function CHOPage() {
   const [formData, setFormData] = useState({ title: '', description: '', file: null });
   const [formErrors, setFormErrors] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
 
   const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dhjp4nolc/upload';
   const UPLOAD_PRESET = 'my_preset_name';
@@ -23,89 +24,81 @@ export default function CHOPage() {
     return errors;
   };
 
-   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const errors = validateForm();
-  if (Object.keys(errors).length > 0) return setFormErrors(errors);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) return setFormErrors(errors);
 
-  setUploading(true);
-  const data = new FormData();
-  data.append('file', formData.file);
-  data.append('upload_preset', UPLOAD_PRESET);
+    setUploading(true);
+    const data = new FormData();
+    data.append('file', formData.file);
+    data.append('upload_preset', UPLOAD_PRESET);
 
-  try {
-    // Upload to Cloudinary
-    const cloudinaryRes = await axios.post(CLOUDINARY_URL, data);
+    try {
+      const cloudinaryRes = await axios.post(CLOUDINARY_URL, data);
 
-    const newCHO = {
-      title: formData.title,
-      description: formData.description,
-      fileUrl: cloudinaryRes.data.secure_url,
-      fileType: formData.file.type,
-    };
+      const newCHO = {
+        title: formData.title,
+        description: formData.description,
+        fileUrl: cloudinaryRes.data.secure_url,
+        fileType: formData.file.type,
+      };
 
-    // Send to your backend API
-    const apiRes = await axios.post(
-      `${BASE_URL}/api/chos`,  // adjust the URL as per your backend route
-      newCHO,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // if using JWT auth
-        },
-      }
-    );
+      const apiRes = await axios.post(
+        `${BASE_URL}/api/chos`,
+        newCHO,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
 
-    setChos(prev => [apiRes.data, ...prev]); // Use response from DB, which includes _id etc.
-    setFormData({ title: '', description: '', file: null });
-    setFormErrors({});
-    setShowForm(false);
-  } catch (err) {
-    console.error('Error uploading CHO:', err);
-  } finally {
-    setUploading(false);
-  }
-};
-
+      setChos(prev => [apiRes.data, ...prev]);
+      setFormData({ title: '', description: '', file: null });
+      setFormErrors({});
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error uploading CHO:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleDelete = async (fileUrl) => {
-  try {
-    // Find the CHO with the matching fileUrl
-    const choToDelete = chos.find(cho => cho.fileUrl === fileUrl);
-    if (!choToDelete) return;
-
-    // Send DELETE request to backend
-    await axios.delete(`${BASE_URL}/api/chos/${choToDelete._id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`, // if using JWT
-      },
-    });
-
-    // Remove from UI after successful backend deletion
-    setChos(prev => prev.filter(cho => cho._id !== choToDelete._id));
-  } catch (err) {
-    console.error('Error deleting CHO:', err);
-    alert('Failed to delete CHO. Make sure you are the owner.');
-  }
-};
-
-useEffect(() => {
-  const fetchCHOs = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/chos`, {
+      const choToDelete = chos.find(cho => cho.fileUrl === fileUrl);
+      if (!choToDelete) return;
+
+      await axios.delete(`${BASE_URL}/api/chos/${choToDelete._id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      setChos(res.data);
+
+      setChos(prev => prev.filter(cho => cho._id !== choToDelete._id));
     } catch (err) {
-      console.error('Error fetching CHOs:', err);
+      console.error('Error deleting CHO:', err);
+      alert('Failed to delete CHO. Make sure you are the owner.');
     }
   };
 
-  fetchCHOs();
-}, []);
+  useEffect(() => {
+    const fetchCHOs = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/chos`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        setChos(res.data);
+      } catch (err) {
+        console.error('Error fetching CHOs:', err);
+      }
+    };
 
-
+    fetchCHOs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
@@ -190,7 +183,7 @@ useEffect(() => {
         {/* CHO Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {chos.map((cho, index) => (
-            <div key={index} className="bg-[var(--secondary)] rounded-xl p-4 shadow-lg relative">
+            <div key={index} className="bg-[var(--secondary)] rounded-xl p-4 shadow-lg relative group">
               <h3 className="text-lg font-semibold mb-1">{cho.title}</h3>
               <p className="text-sm text-[var(--neutral)]/70 mb-2">{cho.description}</p>
 
@@ -204,11 +197,20 @@ useEffect(() => {
                   <FileText className="w-4 h-4" /> View PDF
                 </a>
               ) : (
-                <img
-                  src={cho.fileUrl}
-                  alt={cho.title}
-                  className="rounded-lg mt-2 max-h-48 object-cover"
-                />
+                <div className="relative">
+                  <img
+                    src={cho.fileUrl}
+                    alt={cho.title}
+                    className="rounded-lg mt-2 max-h-48 object-cover"
+                  />
+                  <button
+                    onClick={() => setModalImage(cho.fileUrl)}
+                    className="absolute bottom-2 right-2 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                    title="View Full Image"
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
               )}
 
               <button
@@ -235,6 +237,19 @@ useEffect(() => {
           </div>
         )}
       </div>
+
+      {modalImage && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+          onClick={() => setModalImage(null)}
+        >
+          <img
+            src={modalImage}
+            alt="Full Size"
+            className="max-w-[90%] max-h-[90%] rounded-lg shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 }
