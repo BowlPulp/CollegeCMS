@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from '../api/axios';
 import { Filter, Search, Users, UserCheck, UserX, TrendingUp, XCircle, Loader2 } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 const statIcons = [
   Users,
@@ -47,6 +48,12 @@ export default function StudentsList() {
     finalStatus: []
   });
   const observer = useRef();
+  const tableContainerRef = useRef();
+  // Drag-to-scroll state
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const [previewStudent, setPreviewStudent] = useState(null);
 
   // Fetch filter options and stats on mount
   useEffect(() => {
@@ -198,6 +205,42 @@ export default function StudentsList() {
     }
   ];
 
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    const onMouseDown = (e) => {
+      isDragging.current = true;
+      startX.current = e.pageX - container.offsetLeft;
+      scrollLeft.current = container.scrollLeft;
+      container.classList.add('cursor-grabbing');
+    };
+    const onMouseLeave = () => {
+      isDragging.current = false;
+      container.classList.remove('cursor-grabbing');
+    };
+    const onMouseUp = () => {
+      isDragging.current = false;
+      container.classList.remove('cursor-grabbing');
+    };
+    const onMouseMove = (e) => {
+      if (!isDragging.current) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX.current) * 1.5; // scroll speed
+      container.scrollLeft = scrollLeft.current - walk;
+    };
+    container.addEventListener('mousedown', onMouseDown);
+    container.addEventListener('mouseleave', onMouseLeave);
+    container.addEventListener('mouseup', onMouseUp);
+    container.addEventListener('mousemove', onMouseMove);
+    return () => {
+      container.removeEventListener('mousedown', onMouseDown);
+      container.removeEventListener('mouseleave', onMouseLeave);
+      container.removeEventListener('mouseup', onMouseUp);
+      container.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] px-2 sm:px-6 py-8">
       {/* Summary Section */}
@@ -287,11 +330,12 @@ export default function StudentsList() {
       )}
 
       {/* Student Table */}
-      <div className="max-w-6xl mx-auto overflow-x-auto rounded-xl shadow border border-[var(--accent)]/10 bg-[var(--secondary)]/60">
+      <div ref={tableContainerRef} className="max-w-6xl mx-auto overflow-x-auto rounded-xl shadow border border-[var(--accent)]/10 bg-[var(--secondary)]/60 cursor-grab select-none">
         <table className="w-full border-collapse text-sm md:text-base">
           <thead className="sticky  z-10 bg-[var(--secondary)]/95">
             <tr>
               <th className="p-4 font-semibold text-left sticky left-0 bg-[var(--secondary)]/95 z-20">#</th>
+              <th className="p-4 font-semibold text-center">Preview</th>
               <th className="p-4 font-semibold text-left">Roll No</th>
               <th className="p-4 font-semibold text-left">Name</th>
               <th className="p-4 font-semibold text-left">Email</th>
@@ -311,9 +355,9 @@ export default function StudentsList() {
           </thead>
           <tbody>
             {loading && students.length === 0 ? (
-              <tr><td colSpan="16" className="text-center py-10"><Loader2 className="mx-auto animate-spin text-[var(--accent)] w-8 h-8" /></td></tr>
+              <tr><td colSpan="17" className="text-center py-10"><Loader2 className="mx-auto animate-spin text-[var(--accent)] w-8 h-8" /></td></tr>
             ) : students.length === 0 ? (
-              <tr><td colSpan="16" className="text-center py-10 text-[var(--neutral)]/60">No students found.</td></tr>
+              <tr><td colSpan="17" className="text-center py-10 text-[var(--neutral)]/60">No students found.</td></tr>
             ) : students.map((student, index) => (
               <tr
                 key={student._id}
@@ -326,6 +370,15 @@ export default function StudentsList() {
                 style={{ height: '64px' }}
               >
                 <td className="p-4 text-left font-semibold sticky left-0 bg-inherit z-10">{index + 1}</td>
+                <td className="p-4 text-center">
+                  <button
+                    onClick={() => setPreviewStudent(student)}
+                    className="inline-flex items-center justify-center rounded-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/30 transition-colors p-2"
+                    title="Preview Student"
+                  >
+                    <Eye className="w-7 h-7 text-[var(--accent)]" />
+                  </button>
+                </td>
                 <td className="p-4 text-left font-semibold">{student.universityRollNumber || '-'}</td>
                 <td className="p-4 text-left font-bold text-base text-[var(--accent)] whitespace-nowrap truncate max-w-xs">{student.studentName || '-'}</td>
                 <td className="p-4 text-left font-medium">{student.email || '-'}</td>
@@ -355,6 +408,62 @@ export default function StudentsList() {
           </tbody>
         </table>
       </div>
+      {/* Student Preview Modal */}
+      {previewStudent && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setPreviewStudent(null)}>
+          <div className="bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] rounded-2xl shadow-2xl max-w-xl w-full p-0 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-[var(--accent)]/20 bg-[var(--secondary)]">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-2xl font-extrabold text-[var(--accent)] tracking-tight">{previewStudent.studentName || '-'}</h2>
+                <h2 className=" text-[var(--neutral)] text-base rounded-full font-semibold tracking-wide">{previewStudent.universityRollNumber || '-'}</h2>
+              </div>
+              <button className="text-4xl text-[var(--neutral)]/60 hover:text-[var(--accent)] font-bold" onClick={() => setPreviewStudent(null)}>&times;</button>
+            </div>
+            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {/* Left column: Identity & Academic */}
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-semibold text-[var(--accent)] uppercase mb-1 tracking-wider">Contact</div>
+                  <div className="mb-1"><span className="font-semibold">Email:</span> <span className="text-[var(--neutral)]/90">{previewStudent.email || '-'}</span></div>
+                  <div><span className="font-semibold">Mobile:</span> <span className="text-[var(--neutral)]/90">{previewStudent.mobNumber || '-'}</span></div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-[var(--accent)] uppercase mb-1 tracking-wider">Parents</div>
+                  <div className="mb-1"><span className="font-semibold">Mother:</span> {previewStudent.motherName || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Father:</span> {previewStudent.fatherName || '-'}</div>
+                  <div><span className="font-semibold">Parents Mobile:</span> {previewStudent.parentsMobile || '-'}</div>
+                </div>
+              </div>
+              {/* Right column: Academic & Status */}
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-semibold text-[var(--accent)] uppercase mb-1 tracking-wider">Academic</div>
+                  <div className="mb-1"><span className="font-semibold">Branch:</span> {previewStudent.branch || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Group:</span> {previewStudent.updatedGroup || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Cluster:</span> {previewStudent.cluster || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Specialization:</span> {previewStudent.specialization || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Campus:</span> {previewStudent.campus || '-'}</div>
+                  <div><span className="font-semibold">Vendor:</span> {previewStudent.newVendor || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-[var(--accent)] uppercase mb-1 tracking-wider">Status</div>
+                  <div className="mb-2">
+                    {previewStudent.finalStatus ? (
+                      <span className="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700">Finalized</span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700">Pending</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Remarks:</span> <span className="text-[var(--neutral)]/90">{previewStudent.remarks || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
