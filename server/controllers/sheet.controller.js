@@ -1,5 +1,6 @@
 const Sheet = require('../models/sheet.model');
 const {asyncHandler} = require('../utils/asyncHandler');
+const Staff = require('../models/staff.model');
 
 // Get all sheets
 exports.getAllSheets = asyncHandler(async (req, res) => {
@@ -36,4 +37,47 @@ exports.deleteSheet = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Sheet not found.' });
   }
   res.json({ message: 'Sheet deleted successfully.' });
+});
+
+// Get pinned sheets for current user
+exports.getPinnedSheets = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  const staff = await Staff.findById(userId);
+  if (!staff) return res.status(404).json({ message: 'User not found' });
+  const pinnedSheets = staff.pinnedSheets || [];
+  // Optionally, populate sheet details:
+  const sheets = await Sheet.find({ _id: { $in: pinnedSheets } });
+  // Return in the order of pinnedSheets
+  const sheetsMap = Object.fromEntries(sheets.map(s => [s._id.toString(), s]));
+  const ordered = pinnedSheets.map(id => sheetsMap[id]).filter(Boolean);
+  res.json(ordered);
+});
+
+// Pin a sheet
+exports.pinSheet = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const { sheetId } = req.body;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  if (!sheetId) return res.status(400).json({ message: 'sheetId required' });
+  const staff = await Staff.findById(userId);
+  if (!staff) return res.status(404).json({ message: 'User not found' });
+  if (!staff.pinnedSheets.includes(sheetId)) {
+    staff.pinnedSheets.unshift(sheetId);
+    await staff.save();
+  }
+  res.json({ message: 'Sheet pinned' });
+});
+
+// Unpin a sheet
+exports.unpinSheet = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const { sheetId } = req.body;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  if (!sheetId) return res.status(400).json({ message: 'sheetId required' });
+  const staff = await Staff.findById(userId);
+  if (!staff) return res.status(404).json({ message: 'User not found' });
+  staff.pinnedSheets = staff.pinnedSheets.filter(id => id !== sheetId);
+  await staff.save();
+  res.json({ message: 'Sheet unpinned' });
 }); 

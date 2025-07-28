@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText, Search, Filter, ChevronDown, ChevronUp, Pin } from 'lucide-react';
 import SheetPreview from '../components/SheetPreview';
 import axios from '../api/axios';
 import useAuthStore from '../store/authStore';
@@ -29,6 +29,8 @@ export default function SheetManager() {
   const [uploadedByMe, setUploadedByMe] = useState(false);
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' = newest first
   const [showFilters, setShowFilters] = useState(false);
+  const [pinnedSheets, setPinnedSheets] = useState([]);
+  const [pinnedLoading, setPinnedLoading] = useState(false);
 
   // Load sheets from backend on mount
   useEffect(() => {
@@ -45,6 +47,15 @@ export default function SheetManager() {
     };
     fetchSheets();
   }, []);
+
+  // Fetch pinned sheets on mount and when user changes
+  useEffect(() => {
+    if (!user) return;
+    setPinnedLoading(true);
+    axios.get('/api/sheets/pinned')
+      .then(res => setPinnedSheets(res.data))
+      .finally(() => setPinnedLoading(false));
+  }, [user]);
 
   // Generate random 6-digit OTP
   const generateOTP = () => {
@@ -187,10 +198,26 @@ export default function SheetManager() {
     setPreviewSheet(sheet);
   };
 
+  // Pin/unpin handlers
+  const handlePin = async (sheetId) => {
+    if (!user) return;
+    await axios.post('/api/sheets/pin', { sheetId });
+    // Refetch pinned
+    const res = await axios.get('/api/sheets/pinned');
+    setPinnedSheets(res.data);
+  };
+  const handleUnpin = async (sheetId) => {
+    if (!user) return;
+    await axios.post('/api/sheets/unpin', { sheetId });
+    // Refetch pinned
+    const res = await axios.get('/api/sheets/pinned');
+    setPinnedSheets(res.data);
+  };
+
   // Get sheet to delete details
   const sheetToDelete = sheets.find(sheet => (sheet._id || sheet.id) === deleteConfirm);
 
-  // Filtered and sorted sheets
+  // Filtered and sorted sheets (with pinning)
   const filteredSheets = sheets
     .filter(sheet => {
       // Search by name
@@ -201,31 +228,34 @@ export default function SheetManager() {
       // Uploaded by me
       if (uploadedByMe && (user?.name !== sheet.uploadedBy && user?.username !== sheet.uploadedBy)) return false;
       return true;
-    })
-    .sort((a, b) => {
-      if (sortOrder === 'desc') {
-        return new Date(b.uploadDate) - new Date(a.uploadDate);
-      } else {
-        return new Date(a.uploadDate) - new Date(b.uploadDate);
-      }
     });
+  // Remove pinned from main list
+  const pinnedIds = new Set(pinnedSheets.map(s => s.id || s._id));
+  const unpinnedSheets = filteredSheets.filter(s => !pinnedIds.has(s.id || s._id));
+  const sortedSheets = unpinnedSheets.sort((a, b) => {
+    if (sortOrder === 'desc') {
+      return new Date(b.uploadDate) - new Date(a.uploadDate);
+    } else {
+      return new Date(a.uploadDate) - new Date(b.uploadDate);
+    }
+  });
 
   return (
-    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--neutral)] mb-2">
+            <h1 className="text-4xl font-extrabold text-[var(--accent)] mb-2 tracking-tight drop-shadow-sm">
               Google Sheets Manager
             </h1>
-            <p className="text-[var(--neutral)]/70">
-              Upload and manage your Google Sheets for easy access and sharing
+            <p className="text-[var(--neutral)]/70 text-lg">
+              Upload, pin, and manage your Google Sheets for easy access and sharing
             </p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-xl font-semibold shadow-lg hover:bg-[var(--accent)]/90 transition-colors flex items-center gap-2 text-lg"
           >
             <Plus className="h-5 w-5" />
             Add New Sheet
@@ -233,13 +263,13 @@ export default function SheetManager() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/60 rounded-xl p-4 shadow-sm border border-[var(--accent)]/10">
+        <div className="sticky top-16 z-30 mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/80 backdrop-blur-md rounded-xl p-4 shadow-lg border border-[var(--accent)]/10">
           <div className="flex-1 flex items-center gap-2 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 w-5 h-5" />
             <input
               type="text"
               placeholder="Search by sheet name..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-base"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -247,14 +277,14 @@ export default function SheetManager() {
           <button
             type="button"
             onClick={() => setShowFilters(f => !f)}
-            className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2"
+            className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2 shadow"
           >
             <Filter className="h-5 w-5" />
             Filters {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
         {showFilters && (
-          <div className="mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/80 rounded-xl p-4 shadow-sm border border-[var(--accent)]/10 animate-fadeIn">
+          <div className="mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/90 rounded-xl p-4 shadow-lg border border-[var(--accent)]/10 animate-fadeIn">
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-[var(--neutral)]">Date From</label>
               <input
@@ -410,71 +440,166 @@ export default function SheetManager() {
           </div>
         )}
 
+        {/* Pinned Sheets Section */}
+        {user && (
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <Pin className="w-6 h-6 text-[var(--accent)]" fill="currentColor" />
+              <h2 className="text-2xl font-bold text-[var(--accent)] tracking-tight">Pinned Sheets</h2>
+            </div>
+            {pinnedLoading ? (
+              <div className="text-center py-8 text-[var(--neutral)]/60">Loading...</div>
+            ) : pinnedSheets.length === 0 ? (
+              <div className="text-center py-8 text-[var(--neutral)]/60">No pinned sheets.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {pinnedSheets.map(sheet => (
+                  <div key={sheet.id || sheet._id} className="relative group bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] border-2 border-[var(--accent)]/40 rounded-2xl p-7 shadow-xl hover:shadow-2xl transition-shadow">
+                    <span className="absolute top-3 left-3 px-3 py-1 bg-[var(--accent)] text-[var(--primary)] text-xs font-bold rounded-full shadow">Pinned</span>
+                    <button
+                      onClick={() => handleUnpin(sheet.id || sheet._id)}
+                      className="absolute top-3 right-3 z-10 p-2 rounded-full bg-[var(--primary)]/80 border border-[var(--accent)]/20 hover:bg-[var(--accent)]/20 text-[var(--accent)]"
+                      title="Unpin Sheet"
+                    >
+                      <Pin className="w-5 h-5" fill="currentColor" />
+                    </button>
+                    <div className="flex justify-between items-start mb-4 pr-10">
+                      <h3 className="text-xl font-bold text-[var(--neutral)] line-clamp-2" title={sheet.title}>
+                        {sheet.title}
+                      </h3>
+                      <div className="flex gap-2">
+                        {((sheet.uploadedBy === user?.name) || (sheet.uploadedBy === user?.username)) && (
+                          <button
+                            onClick={() => handleDeleteConfirm(sheet.id || sheet._id)}
+                            className="p-2 text-[var(--neutral)]/70 hover:text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[var(--neutral)]/70 text-base mb-4 line-clamp-3" title={sheet.description}>
+                      {sheet.description}
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-[var(--neutral)]/60 mb-4">
+                      <div className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {sheet.uploadedBy === user?.name || sheet.uploadedBy === user?.username ? (
+                          <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Me</span>
+                        ) : (
+                          <span>{sheet.uploadedBy}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span className="px-2 py-0.5 bg-[var(--primary)]/60 rounded-full font-semibold">{new Date(sheet.uploadDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    {/* Overview and Open Sheet buttons */}
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => handlePreview(sheet)}
+                        className="flex-1 px-4 py-2 bg-[var(--primary)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)]/10 transition-colors border border-[var(--accent)]/30 shadow"
+                      >
+                        Overview
+                      </button>
+                      <button
+                        onClick={() => window.open(sheet.originalLink, '_blank')}
+                        className="flex-1 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow"
+                      >
+                        <ExternalLink className="h-5 w-5 mr-1 inline" />
+                        Open Sheet
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {/* Sheets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSheets.map((sheet) => (
-            <div key={sheet.id} className="bg-[var(--secondary)] rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-[var(--neutral)] line-clamp-2">
-                  {sheet.title}
-                </h3>
-                <div className="flex gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {sortedSheets.map((sheet) => {
+            const isPinned = !!pinnedIds.has(sheet.id || sheet._id);
+            return (
+              <div key={sheet.id || sheet._id} className="relative group bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] border border-[var(--accent)]/10 rounded-2xl p-7 shadow-lg hover:shadow-2xl transition-shadow">
+                {user && (
+                  <button
+                    onClick={() => handlePin(sheet.id || sheet._id)}
+                    className={`absolute top-3 right-3 z-10 p-2 rounded-full bg-[var(--primary)]/80 border border-[var(--accent)]/20 hover:bg-[var(--accent)]/20 transition-colors ${isPinned ? 'text-[var(--accent)]' : 'text-[var(--neutral)]/50 group-hover:text-[var(--accent)]'}`}
+                    title={isPinned ? 'Unpin Sheet' : 'Pin Sheet'}
+                  >
+                    <Pin className={`w-5 h-5 ${isPinned ? '' : 'opacity-70'}`} fill={isPinned ? 'currentColor' : 'none'} />
+                  </button>
+                )}
+                <div className="flex justify-between items-start mb-4 pr-10">
+                  <h3 className="text-xl font-bold text-[var(--neutral)] line-clamp-2" title={sheet.title}>
+                    {sheet.title}
+                  </h3>
+                  <div className="flex gap-2">
+                    {((sheet.uploadedBy === user?.name) || (sheet.uploadedBy === user?.username)) && (
+                      <button
+                        onClick={() => handleDeleteConfirm(sheet.id || sheet._id)}
+                        className="p-2 text-[var(--neutral)]/70 hover:text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[var(--neutral)]/70 text-base mb-4 line-clamp-3" title={sheet.description}>
+                  {sheet.description}
+                </p>
+                <div className="flex items-center gap-4 text-xs text-[var(--neutral)]/60 mb-4">
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    {sheet.uploadedBy === user?.name || sheet.uploadedBy === user?.username ? (
+                      <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Me</span>
+                    ) : (
+                      <span>{sheet.uploadedBy}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="px-2 py-0.5 bg-[var(--primary)]/60 rounded-full font-semibold">{new Date(sheet.uploadDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                {/* Overview and Open Sheet buttons */}
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => handlePreview(sheet)}
-                    className="p-2 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors"
-                    title="Preview"
+                    className="flex-1 px-4 py-2 bg-[var(--primary)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)]/10 transition-colors border border-[var(--accent)]/30 shadow"
                   >
-                    <Eye className="h-4 w-4" />
+                    Overview
                   </button>
                   <button
-                    onClick={() => handleDeleteConfirm(sheet.id)}
-                    className="p-2 text-[var(--neutral)]/70 hover:text-red-500 transition-colors"
-                    title="Delete"
+                    onClick={() => window.open(sheet.originalLink, '_blank')}
+                    className="flex-1 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <ExternalLink className="h-5 w-5 mr-1 inline" />
+                    Open Sheet
                   </button>
                 </div>
               </div>
-              
-              <p className="text-[var(--neutral)]/70 text-sm mb-4 line-clamp-3">
-                {sheet.description}
-              </p>
-              
-              <div className="flex items-center gap-4 text-xs text-[var(--neutral)]/60 mb-4">
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  {sheet.uploadedBy}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(sheet.uploadDate).toLocaleDateString()}
-                </div>
-              </div>
-              
-              <button
-                onClick={() => window.open(sheet.originalLink, '_blank')}
-                className="w-full px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors flex items-center justify-center gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Open Sheet
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Empty State */}
         {sheets.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-[var(--neutral)]/50 text-6xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold text-[var(--neutral)] mb-2">
+          <div className="text-center py-16">
+            <div className="text-[var(--neutral)]/50 text-7xl mb-4">📊</div>
+            <h3 className="text-2xl font-bold text-[var(--neutral)] mb-2">
               No sheets uploaded yet
             </h3>
-            <p className="text-[var(--neutral)]/70 mb-6">
+            <p className="text-[var(--neutral)]/70 mb-6 text-lg">
               Upload your first Google Sheet to get started
             </p>
             <button
               onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors"
+              className="px-8 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-xl font-semibold hover:bg-[var(--accent)]/90 transition-colors text-lg shadow"
             >
               Upload Your First Sheet
             </button>

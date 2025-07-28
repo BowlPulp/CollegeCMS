@@ -48,6 +48,9 @@ const staffSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  pinnedSheets: [{
+    type: String, // Sheet ID
+  }],
 }, {
   timestamps: true, // Adds createdAt and updatedAt
 });
