@@ -16,6 +16,8 @@ router.get('/filter', studentController.filterStudents);
 router.get('/filters', studentController.getStudentFilters);
 // Paginated, filtered, and searched student list
 router.get('/list', studentController.listStudents);
+// Get student statistics
+router.get('/stats', studentController.getStudentStats);
 // Get a single student by ID
 router.get('/:id', studentController.getStudent);
 // Delete a student by ID

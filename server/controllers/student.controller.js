@@ -130,4 +130,19 @@ exports.listStudents = asyncHandler(async (req, res) => {
     page,
     totalPages: Math.ceil(total / limit)
   }, 'Student list'));
+});
+
+// Get student statistics from entire database
+exports.getStudentStats = asyncHandler(async (req, res) => {
+  const total = await Student.countDocuments({});
+  const finalized = await Student.countDocuments({ finalStatus: true });
+  const pending = total - finalized;
+  const percentFinalized = total > 0 ? ((finalized / total) * 100).toFixed(1) : '0.0';
+
+  res.status(200).json(new ApiResponse(200, {
+    total,
+    finalized,
+    pending,
+    percentFinalized
+  }, 'Student statistics'));
 }); 
