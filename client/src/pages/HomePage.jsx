@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { 
@@ -11,10 +11,22 @@ import {
   BarChart3,
   Award
 } from 'lucide-react';
+import axios from '../api/axios';
 
 export default function HomePage() {
   const { theme } = useTheme();
   const location = useLocation();
+
+  // Real stats state
+  const [overview, setOverview] = useState({
+    total: 0,
+    finalized: 0,
+    pending: 0,
+    percentFinalized: '0.0',
+    groupWise: {},
+    specializationWise: {}
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   // Handle scrolling to sections when navigating from other pages
   useEffect(() => {
@@ -32,11 +44,19 @@ export default function HomePage() {
     }
   }, [location]);
 
-  // Hardcoded stats data
+  // Fetch real stats
+  useEffect(() => {
+    setLoadingStats(true);
+    axios.get('/api/students/overview')
+      .then(res => setOverview(res.data.data))
+      .finally(() => setLoadingStats(false));
+  }, []);
+
+  // Real stats data
   const stats = [
     {
       title: 'Total Students',
-      value: '2,847',
+      value: loadingStats ? '...' : overview.total,
       icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-50',
@@ -44,7 +64,7 @@ export default function HomePage() {
     },
     {
       title: 'Students Placed',
-      value: '2,156',
+      value: loadingStats ? '...' : overview.finalized,
       icon: UserCheck,
       color: 'text-green-500',
       bgColor: 'bg-green-50',
@@ -52,7 +72,7 @@ export default function HomePage() {
     },
     {
       title: 'Students Unplaced',
-      value: '691',
+      value: loadingStats ? '...' : overview.pending,
       icon: UserX,
       color: 'text-red-500',
       bgColor: 'bg-red-50',
@@ -60,7 +80,7 @@ export default function HomePage() {
     },
     {
       title: 'Placement Rate',
-      value: '75.7%',
+      value: loadingStats ? '...' : `${overview.percentFinalized}%`,
       icon: TrendingUp,
       color: 'text-purple-500',
       bgColor: 'bg-purple-50',
@@ -68,7 +88,7 @@ export default function HomePage() {
     },
     {
       title: 'Total Teachers',
-      value: '312',
+      value: '312', // Still hardcoded
       icon: GraduationCap,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-50',
@@ -76,7 +96,7 @@ export default function HomePage() {
     },
     {
       title: 'Total Trainers',
-      value: '89',
+      value: '89', // Still hardcoded
       icon: BookOpen,
       color: 'text-orange-500',
       bgColor: 'bg-orange-50',
@@ -120,6 +140,20 @@ export default function HomePage() {
     );
   };
 
+  // Group-wise and specialization-wise cards
+  const groupCards = Object.entries(overview.groupWise).map(([group, count]) => (
+    <div key={group} className="bg-[var(--secondary)] rounded-xl p-4 text-center border border-[var(--accent)]/10">
+      <div className="text-lg font-semibold text-[var(--accent)]">Group {group}</div>
+      <div className="text-2xl font-bold text-[var(--neutral)]">{count}</div>
+    </div>
+  ));
+  const specCards = Object.entries(overview.specializationWise).map(([spec, count]) => (
+    <div key={spec} className="bg-[var(--secondary)] rounded-xl p-4 text-center border border-[var(--accent)]/10">
+      <div className="text-lg font-semibold text-[var(--accent)]">{spec}</div>
+      <div className="text-2xl font-bold text-[var(--neutral)]">{count}</div>
+    </div>
+  ));
+
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] ">
       {/* Hero Section */}
@@ -149,112 +183,26 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             {stats.map((stat, index) => (
               <StatCard key={index} stat={stat} />
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--secondary)]/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-[var(--neutral)]">
-              Key Features
-            </h2>
-            <p className="text-[var(--neutral)]/70 text-lg max-w-2xl mx-auto">
-              Powerful tools designed to enhance educational management and student success
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-[var(--primary)] rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-[var(--accent)]/10 rounded-lg mb-6">
-                <BarChart3 className="h-6 w-6 text-[var(--accent)]" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-[var(--neutral)]">
-                Analytics Dashboard
-              </h3>
-              <p className="text-[var(--neutral)]/70">
-                Comprehensive analytics and reporting tools for data-driven decision making.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="bg-[var(--primary)] rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-[var(--accent)]/10 rounded-lg mb-6">
-                <Users className="h-6 w-6 text-[var(--accent)]" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-[var(--neutral)]">
-                Student Management
-              </h3>
-              <p className="text-[var(--neutral)]/70">
-                Efficient student lifecycle management from enrollment to placement.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-[var(--primary)] rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-[var(--accent)]/10 rounded-lg mb-6">
-                <Award className="h-6 w-6 text-[var(--accent)]" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-[var(--neutral)]">
-                Placement Tracking
-              </h3>
-              <p className="text-[var(--neutral)]/70">
-                Real-time placement monitoring and career progression tracking.
-              </p>
+          {/* Group-wise stats */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-4 text-[var(--neutral)]">Group-wise Students</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {groupCards.length > 0 ? groupCards : <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-8 text-[var(--neutral)]">
-              About ChitkaraCMS
-            </h2>
-            <div className="text-lg text-[var(--neutral)]/70 space-y-6">
-              <p>
-                ChitkaraCMS is a comprehensive cluster management system designed specifically 
-                for Chitkara University to streamline educational operations and enhance student outcomes.
-              </p>
-              <p>
-                Our platform provides real-time insights into student performance, placement statistics, 
-                and faculty management, enabling data-driven decisions that improve educational quality and 
-                student success rates.
-              </p>
-              <p>
-                With advanced analytics, intuitive dashboards, and seamless integration capabilities, 
-                ChitkaraCMS empowers educational institutions to optimize their operations and 
-                achieve better results.
-              </p>
+          {/* Specialization-wise stats */}
+          <div>
+            <h3 className="text-xl font-bold mb-4 text-[var(--neutral)]">Specialization-wise Students</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {specCards.length > 0 ? specCards : <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-[var(--accent)]/10">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4 text-[var(--neutral)]">
-            Ready to Get Started?
-          </h2>
-          <p className="text-lg mb-8 text-[var(--neutral)]/70">
-            Join thousands of educators and students already using ChitkaraCMS
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors">
-              Get Started
-            </button>
-            <button className="px-8 py-3 border-2 border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors">
-              Learn More
-            </button>
           </div>
         </div>
       </section>

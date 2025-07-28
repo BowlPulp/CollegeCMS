@@ -145,4 +145,35 @@ exports.getStudentStats = asyncHandler(async (req, res) => {
     pending,
     percentFinalized
   }, 'Student statistics'));
+});
+
+// Get student overview (total, placed, unplaced, placement rate, group-wise, specialization-wise)
+exports.getStudentOverview = asyncHandler(async (req, res) => {
+  const total = await Student.countDocuments({});
+  const finalized = await Student.countDocuments({ finalStatus: true });
+  const pending = total - finalized;
+  const percentFinalized = total > 0 ? ((finalized / total) * 100).toFixed(1) : '0.0';
+
+  // Group-wise counts
+  const groupAgg = await Student.aggregate([
+    { $group: { _id: "$updatedGroup", count: { $sum: 1 } } }
+  ]);
+  const groupWise = {};
+  groupAgg.forEach(g => { if (g._id) groupWise[g._id] = g.count; });
+
+  // Specialization-wise counts
+  const specAgg = await Student.aggregate([
+    { $group: { _id: "$specialization", count: { $sum: 1 } } }
+  ]);
+  const specializationWise = {};
+  specAgg.forEach(s => { if (s._id) specializationWise[s._id] = s.count; });
+
+  res.status(200).json(new ApiResponse(200, {
+    total,
+    finalized,
+    pending,
+    percentFinalized,
+    groupWise,
+    specializationWise
+  }, 'Student overview'));
 }); 

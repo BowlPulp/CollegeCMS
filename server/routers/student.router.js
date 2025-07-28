@@ -18,6 +18,8 @@ router.get('/filters', studentController.getStudentFilters);
 router.get('/list', studentController.listStudents);
 // Get student statistics
 router.get('/stats', studentController.getStudentStats);
+// Get student overview (total, placed, unplaced, placement rate, group-wise, specialization-wise)
+router.get('/overview', studentController.getStudentOverview);
 // Get a single student by ID
 router.get('/:id', studentController.getStudent);
 // Delete a student by ID
