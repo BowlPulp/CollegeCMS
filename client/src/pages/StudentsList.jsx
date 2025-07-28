@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from '../api/axios';
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, Users, UserCheck, UserX, TrendingUp, XCircle, Loader2 } from 'lucide-react';
+
+const statIcons = [
+  Users,
+  UserCheck,
+  UserX,
+  TrendingUp
+];
+const statColors = [
+  'bg-blue-100 text-blue-600',
+  'bg-green-100 text-green-600',
+  'bg-red-100 text-red-600',
+  'bg-yellow-100 text-yellow-600'
+];
 
 export default function StudentsList() {
   const [students, setStudents] = useState([]);
@@ -158,74 +171,81 @@ export default function StudentsList() {
   };
 
   // Calculate statistics from database stats
-  const { total, finalized, pending, percentFinalized } = stats;
+  const statData = [
+    {
+      label: 'Total Students',
+      value: stats.total,
+      icon: Users,
+      color: statColors[0]
+    },
+    {
+      label: 'Finalized',
+      value: stats.finalized,
+      icon: UserCheck,
+      color: statColors[1]
+    },
+    {
+      label: 'Pending',
+      value: stats.pending,
+      icon: UserX,
+      color: statColors[2]
+    },
+    {
+      label: '% Finalized',
+      value: stats.percentFinalized + '%',
+      icon: TrendingUp,
+      color: statColors[3]
+    }
+  ];
 
   return (
-    <div
-      className="p-6 space-y-6 max-w-6xl mx-auto"
-      style={{ backgroundColor: "var(--primary)", color: "var(--neutral)" }}
-    >
+    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] px-2 sm:px-6 py-8">
       {/* Summary Section */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-        <div className="p-4 rounded-xl" style={{ backgroundColor: "var(--secondary)" }}>
-          <p className="text-sm text-gray-300">Total Students</p>
-          <p className="text-2xl font-bold">{total}</p>
-        </div>
-        <div className="p-4 rounded-xl" style={{ backgroundColor: "var(--secondary)" }}>
-          <p className="text-sm text-gray-300">Finalized</p>
-          <p className="text-2xl font-bold text-green-400">{finalized}</p>
-        </div>
-        <div className="p-4 rounded-xl" style={{ backgroundColor: "var(--secondary)" }}>
-          <p className="text-sm text-gray-300">Pending</p>
-          <p className="text-2xl font-bold text-red-400">{pending}</p>
-        </div>
-        <div className="p-4 rounded-xl" style={{ backgroundColor: "var(--secondary)" }}>
-          <p className="text-sm text-gray-300">% Finalized</p>
-          <p className="text-2xl font-bold text-yellow-400">{percentFinalized}%</p>
-        </div>
+      <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 top-0 z-10 bg-[var(--primary)]/80 backdrop-blur-md py-2 rounded-xl">
+        {statData.map((stat, idx) => (
+          <div key={stat.label} className={`flex flex-col items-center justify-center rounded-xl shadow-sm p-4 ${stat.color} bg-opacity-30`}>
+            <stat.icon className="w-7 h-7 mb-2" />
+            <div className="text-lg font-bold">{stat.value}</div>
+            <div className="text-xs font-medium opacity-80">{stat.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--neutral)]/50" />
-          <form onSubmit={handleSearch} className="flex">
-            <input
-              type="text"
-              placeholder="Search by name, roll number, email, branch, group, cluster, specialization, or campus..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-[var(--neutral)] text-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] border-[var(--accent)]/30"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="ml-2 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors"
-            >
-              Search
+      {/* Search and Filter Bar */}
+      <div className="max-w-6xl mx-auto sticky top-16 z-30 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center mb-6 bg-[var(--secondary)]/80 backdrop-blur-md rounded-xl p-3 shadow-sm border border-[var(--accent)]/10">
+        <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search by name, roll, email, branch, group, cluster, specialization, campus..."
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+          />
+          {searchInput && (
+            <button type="button" onClick={() => setSearchInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 hover:text-red-500">
+              <XCircle className="w-5 h-5" />
             </button>
-          </form>
-          {/* {search && (
-            <button
-              type="button"
-              onClick={handleResetSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--neutral)]/70 hover:text-[var(--accent)]"
-            >
-              Clear
-            </button>
-          )} */}
-        </div>
-        <button 
-          type="button" 
-          onClick={() => setShowFilter(true)} 
-          className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2"
+          )}
+          <button
+            type="submit"
+            className="ml-2 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow"
+          >
+            Search
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => setShowFilter(true)}
+          className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2 shadow"
         >
-          <Filter className="h-4 w-4" />
+          <Filter className="h-5 w-5" />
           Filter
         </button>
-        <button 
-          type="button" 
-          onClick={handleClearAll} 
-          className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center gap-2"
+        <button
+          type="button"
+          onClick={handleClearAll}
+          className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center gap-2 shadow"
         >
           Clear All
         </button>
@@ -234,66 +254,32 @@ export default function StudentsList() {
       {/* Filter Modal */}
       {showFilter && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[var(--secondary)] rounded-xl p-6 w-full max-w-md shadow-lg relative">
-            <button onClick={() => setShowFilter(false)} className="absolute top-2 right-2 text-[var(--neutral)]/60 hover:text-[var(--accent)] text-xl">&times;</button>
-            <h3 className="text-lg font-semibold mb-4 text-[var(--neutral)]">Filter Students</h3>
+          <div className="bg-[var(--secondary)] rounded-2xl p-8 w-full max-w-md shadow-2xl border border-[var(--accent)]/20 relative animate-fadeIn">
+            <button onClick={() => setShowFilter(false)} className="absolute top-3 right-3 text-[var(--neutral)]/60 hover:text-[var(--accent)] text-2xl">&times;</button>
+            <h3 className="text-xl font-bold mb-6 text-[var(--neutral)] text-center">Filter Students</h3>
             <form onSubmit={e => { e.preventDefault(); fetchStudents(true, 1, filters); setShowFilter(false); }} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Branch</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.branch} onChange={e => setFilters(f => ({ ...f, branch: e.target.value }))} >
-                  <option value="">Any</option>
-                  {filterOptions.branch.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Group</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.updatedGroup} onChange={e => setFilters(f => ({ ...f, updatedGroup: e.target.value }))} >
-                  <option value="">Any</option>
-                  {filterOptions.updatedGroup.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Cluster</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.cluster} onChange={e => setFilters(f => ({ ...f, cluster: e.target.value }))} >
-                  <option value="">Any</option>
-                  {filterOptions.cluster.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Specialization</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.specialization} onChange={e => setFilters(f => ({ ...f, specialization: e.target.value }))} >
-                  <option value="">Any</option>
-                  {filterOptions.specialization.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Campus</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.campus} onChange={e => setFilters(f => ({ ...f, campus: e.target.value }))} >
-                  <option value="">Any</option>
-                  {filterOptions.campus.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[var(--neutral)]">Final Status</label>
-                <select className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)]" value={filters.finalStatus} onChange={e => setFilters(f => ({ ...f, finalStatus: e.target.value }))}>
-                  <option value="">Any</option>
-                  <option value="true">Finalized</option>
-                  <option value="false">Pending</option>
-                </select>
-              </div>
+              {['branch','updatedGroup','cluster','specialization','campus','finalStatus'].map(field => (
+                <div key={field}>
+                  <label className="block text-sm font-medium mb-1 text-[var(--neutral)] capitalize">{field.replace(/([A-Z])/g, ' $1')}</label>
+                  <select
+                    className="w-full px-3 py-2 rounded border bg-[var(--primary)] text-[var(--neutral)] border-[var(--accent)]/20"
+                    value={filters[field]}
+                    onChange={e => setFilters(f => ({ ...f, [field]: e.target.value }))}
+                  >
+                    <option value="">Any</option>
+                    {filterOptions[field] && filterOptions[field].map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                    {field === 'finalStatus' && [
+                      <option key="true" value="true">Finalized</option>,
+                      <option key="false" value="false">Pending</option>
+                    ]}
+                  </select>
+                </div>
+              ))}
               <div className="flex gap-2 justify-end pt-2">
-                <button type="button" onClick={() => { setFilters({ branch: '', updatedGroup: '', cluster: '', specialization: '', campus: '', finalStatus: '' }); fetchStudents(true, 1, filters); setShowFilter(false); }} className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-medium hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors">Clear</button>
-                <button type="submit" className="px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-medium hover:bg-[var(--accent)]/90 transition-colors">Apply</button>
+                <button type="button" onClick={() => { setFilters({ branch: '', updatedGroup: '', cluster: '', specialization: '', campus: '', finalStatus: '' }); fetchStudents(true, 1, filters); setShowFilter(false); }} className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors">Clear</button>
+                <button type="submit" className="px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors">Apply</button>
               </div>
             </form>
           </div>
@@ -301,61 +287,70 @@ export default function StudentsList() {
       )}
 
       {/* Student Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-xs md:text-sm">
-          <thead>
+      <div className="max-w-6xl mx-auto overflow-x-auto rounded-xl shadow border border-[var(--accent)]/10 bg-[var(--secondary)]/60">
+        <table className="w-full border-collapse text-sm md:text-base">
+          <thead className="sticky  z-10 bg-[var(--secondary)]/95">
             <tr>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>#</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Name</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Roll No</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Email</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Mobile</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Group</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Campus</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Branch</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Cluster</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Specialization</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Vendor</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Status</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Remarks</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Mother</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Father</th>
-              <th className="p-2 border" style={{ backgroundColor: "var(--secondary)" }}>Parents Mobile</th>
+              <th className="p-4 font-semibold text-left sticky left-0 bg-[var(--secondary)]/95 z-20">#</th>
+              <th className="p-4 font-semibold text-left">Roll No</th>
+              <th className="p-4 font-semibold text-left">Name</th>
+              <th className="p-4 font-semibold text-left">Email</th>
+              <th className="p-4 font-semibold text-left">Mobile</th>
+              <th className="p-4 font-semibold text-left">Group</th>
+              <th className="p-4 font-semibold text-left">Campus</th>
+              <th className="p-4 font-semibold text-left">Branch</th>
+              <th className="p-4 font-semibold text-left">Cluster</th>
+              <th className="p-4 font-semibold text-left">Specialization</th>
+              <th className="p-4 font-semibold text-left">Vendor</th>
+              <th className="p-4 font-semibold text-left">Status</th>
+              <th className="p-4 font-semibold text-left">Remarks</th>
+              <th className="p-4 font-semibold text-left">Mother</th>
+              <th className="p-4 font-semibold text-left">Father</th>
+              <th className="p-4 font-semibold text-left">Parents Mobile</th>
             </tr>
           </thead>
           <tbody>
             {loading && students.length === 0 ? (
-              <tr><td colSpan="16" className="text-center py-6">Loading...</td></tr>
+              <tr><td colSpan="16" className="text-center py-10"><Loader2 className="mx-auto animate-spin text-[var(--accent)] w-8 h-8" /></td></tr>
             ) : students.length === 0 ? (
-              <tr><td colSpan="16" className="text-center py-6">No students found.</td></tr>
+              <tr><td colSpan="16" className="text-center py-10 text-[var(--neutral)]/60">No students found.</td></tr>
             ) : students.map((student, index) => (
-              <tr key={student._id} ref={students.length === index + 1 ? lastStudentRef : null}>
-                <td className="p-2 border text-center">{index + 1}</td>
-                <td className="p-2 border">{student.studentName || '-'}</td>
-                <td className="p-2 border text-center">{student.universityRollNumber || '-'}</td>
-                <td className="p-2 border">{student.email || '-'}</td>
-                <td className="p-2 border text-center">{student.mobNumber || '-'}</td>
-                <td className="p-2 border text-center">{student.updatedGroup || '-'}</td>
-                <td className="p-2 border text-center">{student.campus || '-'}</td>
-                <td className="p-2 border text-center">{student.branch || '-'}</td>
-                <td className="p-2 border text-center">{student.cluster || '-'}</td>
-                <td className="p-2 border text-center">{student.specialization || '-'}</td>
-                <td className="p-2 border text-center">{student.newVendor || '-'}</td>
-                <td className="p-2 border text-center">
+              <tr
+                key={student._id}
+                ref={students.length === index + 1 ? lastStudentRef : null}
+                className={
+                  index % 2 === 0
+                    ? 'bg-[var(--primary)]/90 hover:bg-[var(--accent)]/10 transition-colors'
+                    : 'bg-[var(--primary)]/70 hover:bg-[var(--accent)]/10 transition-colors'
+                }
+                style={{ height: '64px' }}
+              >
+                <td className="p-4 text-left font-semibold sticky left-0 bg-inherit z-10">{index + 1}</td>
+                <td className="p-4 text-left font-semibold">{student.universityRollNumber || '-'}</td>
+                <td className="p-4 text-left font-bold text-base text-[var(--accent)] whitespace-nowrap truncate max-w-xs">{student.studentName || '-'}</td>
+                <td className="p-4 text-left font-medium">{student.email || '-'}</td>
+                <td className="p-4 text-left">{student.mobNumber || '-'}</td>
+                <td className="p-4 text-left">{student.updatedGroup || '-'}</td>
+                <td className="p-4 text-left">{student.campus || '-'}</td>
+                <td className="p-4 text-left">{student.branch || '-'}</td>
+                <td className="p-4 text-left">{student.cluster || '-'}</td>
+                <td className="p-4 text-left whitespace-nowrap truncate max-w-xs">{student.specialization || '-'}</td>
+                <td className="p-4 text-left">{student.newVendor || '-'}</td>
+                <td className="p-4 text-left">
                   {student.finalStatus ? (
-                    <span className="text-green-400 font-semibold">Finalized</span>
+                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Finalized</span>
                   ) : (
-                    <span className="text-red-400 font-semibold">Pending</span>
+                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Pending</span>
                   )}
                 </td>
-                <td className="p-2 border text-center">{student.remarks || '-'}</td>
-                <td className="p-2 border text-center">{student.motherName || '-'}</td>
-                <td className="p-2 border text-center">{student.fatherName || '-'}</td>
-                <td className="p-2 border text-center">{student.parentsMobile || '-'}</td>
+                <td className="p-4 text-left whitespace-nowrap truncate max-w-xs">{student.remarks || '-'}</td>
+                <td className="p-4 text-left whitespace-nowrap truncate max-w-xs">{student.motherName || '-'}</td>
+                <td className="p-4 text-left whitespace-nowrap truncate max-w-xs">{student.fatherName || '-'}</td>
+                <td className="p-4 text-left">{student.parentsMobile || '-'}</td>
               </tr>
             ))}
             {loading && students.length > 0 && (
-              <tr><td colSpan="16" className="text-center py-4">Loading more...</td></tr>
+              <tr><td colSpan="16" className="text-center py-6"><Loader2 className="mx-auto animate-spin text-[var(--accent)] w-6 h-6" /></td></tr>
             )}
           </tbody>
         </table>
