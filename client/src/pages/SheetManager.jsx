@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText } from 'lucide-react';
+import { Upload, Eye, Trash2, ExternalLink, Calendar, User, Plus, Shield, Copy, FileText, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import SheetPreview from '../components/SheetPreview';
 import axios from '../api/axios';
 import useAuthStore from '../store/authStore';
@@ -23,6 +23,12 @@ export default function SheetManager() {
   const [formErrors, setFormErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiLoading, setApiLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [uploadedByMe, setUploadedByMe] = useState(false);
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' = newest first
+  const [showFilters, setShowFilters] = useState(false);
 
   // Load sheets from backend on mount
   useEffect(() => {
@@ -184,6 +190,26 @@ export default function SheetManager() {
   // Get sheet to delete details
   const sheetToDelete = sheets.find(sheet => (sheet._id || sheet.id) === deleteConfirm);
 
+  // Filtered and sorted sheets
+  const filteredSheets = sheets
+    .filter(sheet => {
+      // Search by name
+      if (searchTerm && !sheet.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      // Date range
+      if (dateFrom && new Date(sheet.uploadDate) < new Date(dateFrom)) return false;
+      if (dateTo && new Date(sheet.uploadDate) > new Date(dateTo)) return false;
+      // Uploaded by me
+      if (uploadedByMe && (user?.name !== sheet.uploadedBy && user?.username !== sheet.uploadedBy)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'desc') {
+        return new Date(b.uploadDate) - new Date(a.uploadDate);
+      } else {
+        return new Date(a.uploadDate) - new Date(b.uploadDate);
+      }
+    });
+
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -205,6 +231,89 @@ export default function SheetManager() {
             Add New Sheet
           </button>
         </div>
+
+        {/* Search & Filter Bar */}
+        <div className="mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/60 rounded-xl p-4 shadow-sm border border-[var(--accent)]/10">
+          <div className="flex-1 flex items-center gap-2 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by sheet name..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFilters(f => !f)}
+            className="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--accent)] hover:text-[var(--primary)] transition-colors flex items-center gap-2"
+          >
+            <Filter className="h-5 w-5" />
+            Filters {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {showFilters && (
+          <div className="mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end bg-[var(--secondary)]/80 rounded-xl p-4 shadow-sm border border-[var(--accent)]/10 animate-fadeIn">
+            <div className="flex flex-col">
+              <label className="text-xs font-medium mb-1 text-[var(--neutral)]">Date From</label>
+              <input
+                type="date"
+                className="px-3 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)]"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                max={dateTo || undefined}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-medium mb-1 text-[var(--neutral)]">Date To</label>
+              <input
+                type="date"
+                className="px-3 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)]"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                min={dateFrom || undefined}
+              />
+            </div>
+            <div className="flex flex-col justify-end">
+              <label className="text-xs font-medium mb-1 text-[var(--neutral)]"> </label>
+              <button
+                type="button"
+                onClick={() => setUploadedByMe(v => !v)}
+                className={`px-4 py-2 rounded-lg border font-semibold flex items-center gap-2 transition-colors ${uploadedByMe ? 'bg-[var(--accent)] text-[var(--primary)] border-[var(--accent)]' : 'bg-[var(--primary)] text-[var(--accent)] border-[var(--accent)]/40'}`}
+              >
+                <User className="h-4 w-4" /> Uploaded by Me
+              </button>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-medium mb-1 text-[var(--neutral)]">Sort by</label>
+              <select
+                className="px-3 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)]"
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value)}
+              >
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+              </select>
+            </div>
+            <div className="flex flex-col justify-end">
+              <label className="text-xs font-medium mb-1 text-[var(--neutral)]"> </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setDateFrom('');
+                  setDateTo('');
+                  setUploadedByMe(false);
+                  setSortOrder('desc');
+                }}
+                className="px-4 py-2 rounded-lg border border-red-400 text-red-500 font-semibold hover:bg-red-500 hover:text-white transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Upload Form */}
         {showForm && (
@@ -303,7 +412,7 @@ export default function SheetManager() {
 
         {/* Sheets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sheets.map((sheet) => (
+          {filteredSheets.map((sheet) => (
             <div key={sheet.id} className="bg-[var(--secondary)] rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-[var(--neutral)] line-clamp-2">
