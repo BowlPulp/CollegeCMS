@@ -11,7 +11,7 @@ const useAuthStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const res = await axios.post('/api/auth/staff/login', { identifier, password });
-      set({ user: res.data.data.staff, loading: false });
+      set({ user: res.data.data, loading: false });
       return res.data;
     } catch (err) {
       set({ error: err.response?.data?.message || 'Login failed', loading: false });

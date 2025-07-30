@@ -87,7 +87,75 @@ const sendEventNotifications = async (event, recipientEmails) => {
   return results;
 };
 
+// Send duty notification email
+const sendDutyNotification = async (duty, recipientEmail) => {
+  try {
+    const formattedDates = duty.dates.map(d => new Date(d).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })).join(', ');
+
+    const mailOptions = {
+      from: `"CCMS" <${process.env.EMAIL_USER}>`,
+      to: recipientEmail,
+      subject: `Duty Assignment: ${duty.title}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px;">
+          <h2 style="color: #333333; font-weight: normal; margin-bottom: 20px;">Duty Assignment</h2>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+            <h3 style="color: #007bff; margin: 0 0 15px 0; font-size: 18px;">${duty.title}</h3>
+            <p style="color: #555555; margin: 0 0 15px 0; line-height: 1.6;">${duty.description || 'No description provided.'}</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <p style="margin: 5px 0; color: #333333;"><strong>Dates:</strong> ${formattedDates}</p>
+            <p style="margin: 5px 0; color: #333333;"><strong>Time:</strong> ${duty.startTime} - ${duty.endTime}</p>
+            <p style="margin: 5px 0; color: #333333;"><strong>Location:</strong> ${duty.location || 'Not specified'}</p>
+            <p style="margin: 5px 0; color: #333333;"><strong>Assigned By:</strong> ${duty.createdBy}</p>
+          </div>
+
+          <div style="background-color: #e7f3ff; padding: 15px; border-radius: 6px; border-left: 4px solid #007bff;">
+            <p style="margin: 0; color: #0056b3; font-size: 14px;">
+              <strong>Note:</strong> You have been assigned this duty. Please mark your calendar.
+            </p>
+          </div>
+
+          <p style="font-size: 14px; color: #999999; margin-top: 30px; text-align: center;">
+            – CCMS Team
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Duty notification sent to ${recipientEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending duty notification:', error);
+    return false;
+  }
+};
+
+// Send duty notifications to multiple recipients
+const sendDutyNotifications = async (duty, recipientEmails) => {
+  const results = [];
+  for (const email of recipientEmails) {
+    try {
+      const success = await sendDutyNotification(duty, email);
+      results.push({ email, success });
+    } catch (error) {
+      console.error(`Failed to send duty notification to ${email}:`, error);
+      results.push({ email, success: false, error: error.message });
+    }
+  }
+  return results;
+};
+
 module.exports = {
   sendEventNotification,
-  sendEventNotifications
+  sendEventNotifications,
+  sendDutyNotification,
+  sendDutyNotifications
 }; 

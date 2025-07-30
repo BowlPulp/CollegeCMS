@@ -16,6 +16,7 @@ import ManageStudents from "./pages/admin/ManageStudents"
 import ResetPasswordPage from "./pages/ResetPasswordPage"
 import EventNewsPage from "./pages/EventNewsPage"
 import ChoPage from "./pages/ChoPage"
+import DutyPage from './pages/DutyPage';
 
 // PrivateRoute for role-based protection
 function PrivateRoute({ children, allowedRoles }) {
@@ -74,6 +75,7 @@ function App() {
         <Route path="/load" element={<Loader />} />
         <Route path="/event-news" element={<EventNewsPage />} />
         <Route path="/chos" element={<ChoPage />} />
+        <Route path="/duties" element={<DutyPage />} />
       </Route>
 
       <Route path="*" element={<NotFound404 />} />

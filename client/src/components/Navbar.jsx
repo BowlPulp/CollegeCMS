@@ -37,6 +37,7 @@ export default function Navbar() {
           <Link to="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</Link>
           <Link to='/students' className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Students List</Link>
           <Link to='/timetable' className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Time Table</Link>
+          <Link to='/duties' className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] cursor-pointer">Duty</Link>
           {/* Admin Panel button for admin */}
           {user?.role === 'admin' && (
             <Link to="/admin/home" className="px-3 py-2 rounded-md text-sm font-medium bg-[var(--accent)] text-[var(--primary)] hover:bg-[var(--accent)]/90 transition">Admin Panel</Link>
@@ -134,7 +135,8 @@ export default function Navbar() {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-[var(--primary)]">
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Home</Link>
             <Link to='/students' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Students List</Link>
-            <Link to='/timetable' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">About</Link>
+            <Link to='/timetable' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Time Table</Link>
+            <Link to='/duties' className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Duty</Link>
             <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)]">Resources</a>
 
             <div className="pt-4 pb-3 border-t border-[var(--secondary)]">

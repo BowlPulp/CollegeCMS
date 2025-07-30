@@ -342,16 +342,16 @@ const updateEvent = asyncHandler(async (req, res) => {
 
   const updatedEvent = await Event.findByIdAndUpdate(id, updateData, { new: true });
 
-  if (!updatedEvent) {
+    if (!updatedEvent) {
     throw new ApiError(404, 'Event not found');
-  }
+    }
 
   // Send email notifications to tagged staff (only for events)
   if (type === 'event' && taggedStaff && taggedStaff.length > 0) {
     try {
       const notificationResults = await sendEventNotifications(updatedEvent, taggedStaff);
       console.log('Email notification results:', notificationResults);
-    } catch (error) {
+  } catch (error) {
       console.error('Failed to send email notifications:', error);
       // Don't fail the request if email sending fails
     }
@@ -364,10 +364,10 @@ const updateEvent = asyncHandler(async (req, res) => {
 const deleteEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const deletedEvent = await Event.findByIdAndDelete(id);
-  if (!deletedEvent) {
+    const deletedEvent = await Event.findByIdAndDelete(id);
+    if (!deletedEvent) {
     throw new ApiError(404, 'Event not found');
-  }
+    }
 
   res.status(200).json(new ApiResponse(200, null, 'Event deleted successfully'));
 });

@@ -73,7 +73,7 @@ const login = asyncHandler(async (req, res, next) => {
       secure: true,
     })
     .status(200)
-    .json(new ApiResponse(200, { staff }, 'Login successful'));
+    .json(new ApiResponse(200, staff, 'Login successful'));
 });
 
 // Get current user from cookie

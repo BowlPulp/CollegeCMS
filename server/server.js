@@ -1,12 +1,14 @@
+const dotenv = require('dotenv');
+// Load environment variables FIRST
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const connectDB = require('./db/db');
 const { ApiResponse } = require('./utils/ApiResponse');
 const { ApiError } = require('./utils/ApiError');
 const cookieParser = require('cookie-parser');
-// Load environment variables
-dotenv.config();
+const dutyRouter = require('./routers/duty.router');
 
 // Connect to MongoDB
 connectDB();
@@ -37,6 +39,7 @@ app.use('/api/sheets', require('./routers/sheet.router'));
 app.use('/api/students', require('./routers/student.router'));
 app.use('/api/chos', require('./routers/cho.router'));
 app.use('/api/events', require('./routers/event.router'));
+app.use('/api/duties', dutyRouter);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
