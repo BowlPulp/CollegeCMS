@@ -63,6 +63,7 @@ export default function DutyPage() {
   const [myDuties, setMyDuties] = useState([]);
   const [loadingAll, setLoadingAll] = useState(false);
   const [loadingMy, setLoadingMy] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
@@ -171,27 +172,31 @@ export default function DutyPage() {
     return errors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSuccessMsg('');
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-    try {
-      await axios.post('/api/duties', {
-        ...form,
-        createdBy: 'admin@demo.com',
-      });
-      setSuccessMsg('Duty assigned successfully!');
-      setForm({
-        title: '', description: '', dutyType: '', customType: '', dates: [], startTime: '', endTime: '', assignedTo: [], location: ''
-      });
-    } catch (err) {
-      setSuccessMsg('Failed to assign duty.');
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSuccessMsg('');
+  const errors = validateForm();
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
+  
+  try {
+    setIsSubmitting(true); // Block submit button and show loader here
+    await axios.post('/api/duties', {
+      ...form,
+      createdBy: 'admin@demo.com',
+    });
+    setSuccessMsg('Duty assigned successfully!');
+    setForm({
+      title: '', description: '', dutyType: '', customType: '', dates: [], startTime: '', endTime: '', assignedTo: [], location: ''
+    });
+  } catch (err) {
+    setSuccessMsg('Failed to assign duty.');
+  } finally {
+    setIsSubmitting(false); // Always unblock the submit button after request completes
+  }
+};
 
   // Function to assign color to duty
   const getDutyColor = (dutyId, colorMap) => {
@@ -622,7 +627,40 @@ const dutyColors = [
                 </div>
                 {formErrors.assignedTo && <div className="text-red-500 text-sm">{formErrors.assignedTo}</div>}
               </div>
-              <button type="submit" className="px-6 py-3 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow mt-4">Assign Duty</button>
+             <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-6 py-3 rounded-lg font-semibold mt-4 shadow transition-colors
+                  ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--accent)] text-[var(--primary)] hover:bg-[var(--accent)]/90'}`}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-[var(--primary)]"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                    <span>Assigning duty, sending mail...</span>
+                  </div>
+                ) : (
+                  'Assign Duty'
+                )}
+              </button>
             </form>
           </div>
         )}
