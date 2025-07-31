@@ -150,7 +150,7 @@ export default function ResetPasswordPage() {
       </div>
 
       <button
-        onClick={() => navigate("/login")}
+        onClick={() => navigate("/")}
         className="mt-4 text-sm underline hover:text-yellow-300 transition"
       >
         Go back to Login
