@@ -66,6 +66,15 @@ const ManageStudents = () => {
     mobNumber: ''
   });
   const [showFilter, setShowFilter] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [editFormData, setEditFormData] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStudent, setDeleteStudent] = useState(null);
+  const [deleteOtp, setDeleteOtp] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -714,6 +723,193 @@ const ManageStudents = () => {
               </div>
             )}
 
+            {/* View Student Modal */}
+            {showViewModal && selectedStudent && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-all">
+                <div className="bg-white dark:bg-[var(--secondary)] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 relative animate-fadeIn">
+                  <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl bg-[var(--accent)]">
+                    <h3 className="text-lg font-bold text-[var(--primary)]">Student Details</h3>
+                    <button
+                      onClick={() => setShowViewModal(false)}
+                      className="text-[var(--primary)] text-2xl font-bold hover:text-red-500 transition"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <div className="p-6 max-h-[70vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                      {Object.entries(selectedStudent).filter(([key]) =>
+                        !['_id', '__v', 'createdAt', 'updatedAt'].includes(key)
+                      ).map(([key, value]) => (
+                        <div key={key} className="flex flex-col">
+                          <span className="text-xs font-semibold text-[var(--accent)] uppercase tracking-wide mb-1">
+                            {key.replace(/([A-Z])/g, ' $1')}
+                          </span>
+                          <span className="text-base text-[var(--neutral)] break-all">
+                            {typeof value === 'boolean'
+                              ? value ? 'Yes' : 'No'
+                              : (value === '' || value == null ? <span className="text-gray-400">—</span> : value)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Student Modal */}
+            {showEditModal && editFormData && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-all">
+                <div className="bg-white dark:bg-[var(--secondary)] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 relative animate-fadeIn">
+                  <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl bg-[var(--accent)]">
+                    <h3 className="text-lg font-bold text-[var(--primary)]">Edit Student</h3>
+                    <button
+                      onClick={() => setShowEditModal(false)}
+                      className="text-[var(--primary)] text-2xl font-bold hover:text-red-500 transition"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await axios.put(`/api/students/${editFormData._id}`, editFormData);
+                        setShowEditModal(false);
+                        setEditFormData(null);
+                        fetchStudents(true, 1, filters);
+                        alert('Student updated successfully!');
+                      } catch (err) {
+                        alert('Failed to update student.');
+                      }
+                    }}
+                    className="p-6 max-h-[70vh] overflow-y-auto space-y-4"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                      {Object.entries(editFormData).filter(([key]) =>
+                        !['_id', '__v', 'createdAt', 'updatedAt'].includes(key)
+                      ).map(([key, value]) => (
+                        <div key={key} className="flex flex-col">
+                          <label className="text-xs font-semibold text-[var(--accent)] uppercase tracking-wide mb-1">
+                            {key.replace(/([A-Z])/g, ' $1')}
+                          </label>
+                          {typeof value === 'boolean' ? (
+                            <input
+                              type="checkbox"
+                              checked={value}
+                              onChange={e => setEditFormData(f => ({ ...f, [key]: e.target.checked }))}
+                              className="h-5 w-5 accent-[var(--accent)]"
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={value || ''}
+                              onChange={e => setEditFormData(f => ({ ...f, [key]: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border bg-[var(--primary)] text-[var(--neutral)] border-[var(--accent)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Student Modal with OTP */}
+            {showDeleteModal && deleteStudent && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-all">
+                <div className="bg-white dark:bg-[var(--secondary)] rounded-2xl shadow-2xl w-full max-w-md mx-4 relative animate-fadeIn">
+                  <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl bg-red-500">
+                    <h3 className="text-lg font-bold text-white">Delete Student</h3>
+                    <button
+                      onClick={() => setShowDeleteModal(false)}
+                      className="text-white text-2xl font-bold hover:text-yellow-200 transition"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <div className="p-6">
+                    <p className="mb-2 text-[var(--neutral)]">
+                      Are you sure you want to <span className="font-bold text-red-500">delete</span> this student?
+                    </p>
+                    <div className="mb-4 text-sm text-[var(--neutral)]/80">
+                      <div><span className="font-semibold">Name:</span> {deleteStudent.studentName}</div>
+                      <div><span className="font-semibold">Roll No:</span> {deleteStudent.universityRollNumber}</div>
+                      <div><span className="font-semibold">Email:</span> {deleteStudent.email}</div>
+                    </div>
+                    <div className="mb-4">
+                      <div className="mb-1 text-sm text-[var(--neutral)]/80">Enter the OTP to confirm deletion:</div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 font-mono text-lg tracking-widest text-[var(--accent)]">{deleteOtp}</span>
+                        <button
+                          type="button"
+                          className="text-xs text-[var(--accent)] underline"
+                          onClick={() => {
+                            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                            setDeleteOtp(otp);
+                            setEnteredOtp('');
+                            setDeleteError('');
+                          }}
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={enteredOtp}
+                        onChange={e => setEnteredOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full px-3 py-2 rounded-lg border bg-[var(--primary)] text-[var(--neutral)] border-[var(--accent)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        placeholder="Enter OTP"
+                      />
+                      {deleteError && <div className="text-red-500 text-xs mt-1">{deleteError}</div>}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-[var(--neutral)] rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                        onClick={() => setShowDeleteModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                        onClick={async () => {
+                          if (enteredOtp !== deleteOtp) {
+                            setDeleteError('Incorrect OTP. Please try again.');
+                            return;
+                          }
+                          try {
+                            await axios.delete(`/api/students/${deleteStudent._id}`);
+                            setShowDeleteModal(false);
+                            setDeleteStudent(null);
+                            fetchStudents(true, 1, filters);
+                            alert('Student deleted successfully!');
+                          } catch (err) {
+                            setDeleteError('Delete failed. Please try again.');
+                          }
+                        }}
+                        disabled={enteredOtp.length !== 6}
+                      >
+                        Confirm Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Students Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -724,15 +920,24 @@ const ManageStudents = () => {
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Roll No</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Group</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Branch</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Cluster</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Specialization</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Campus</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Mobile</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Parents Mobile</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Mother Name</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Father Name</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Remarks</th>
+                    <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">New Vendor</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Status</th>
                     <th className="text-left py-3 px-4 text-[var(--neutral)] font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={7} className="text-center py-6">Loading...</td></tr>
+                    <tr><td colSpan={16} className="text-center py-6">Loading...</td></tr>
                   ) : students.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-6">No students found.</td></tr>
+                    <tr><td colSpan={16} className="text-center py-6">No students found.</td></tr>
                   ) : students.map((student, index) => (
                     <tr key={student._id} className="border-b border-[var(--accent)]/10 hover:bg-[var(--primary)] transition-colors" ref={students.length === index + 1 ? lastStudentRef : null}>
                       <td className="py-3 px-4 text-[var(--neutral)]">{student.studentName}</td>
@@ -740,6 +945,15 @@ const ManageStudents = () => {
                       <td className="py-3 px-4 text-[var(--neutral)]">{student.universityRollNumber}</td>
                       <td className="py-3 px-4 text-[var(--neutral)]">{student.updatedGroup}</td>
                       <td className="py-3 px-4 text-[var(--neutral)]">{student.branch}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.cluster}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.specialization}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.campus}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.mobNumber}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.parentsMobile}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.motherName}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.fatherName}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.remarks}</td>
+                      <td className="py-3 px-4 text-[var(--neutral)]">{student.newVendor}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           student.finalStatus
@@ -751,13 +965,29 @@ const ManageStudents = () => {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex gap-2">
-                          <button className="p-1 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors">
+                          <button
+                            className="p-1 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors"
+                            onClick={() => { setSelectedStudent(student); setShowViewModal(true); }}
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button className="p-1 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors">
+                          <button
+                            className="p-1 text-[var(--neutral)]/70 hover:text-[var(--accent)] transition-colors"
+                            onClick={() => { setEditFormData(student); setShowEditModal(true); }}
+                          >
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button className="p-1 text-[var(--neutral)]/70 hover:text-red-500 transition-colors" onClick={() => handleDelete(student._id)}>
+                          <button
+                            className="p-1 text-[var(--neutral)]/70 hover:text-red-500 transition-colors"
+                            onClick={() => {
+                              const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                              setDeleteOtp(otp);
+                              setEnteredOtp('');
+                              setDeleteError('');
+                              setDeleteStudent(student);
+                              setShowDeleteModal(true);
+                            }}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
