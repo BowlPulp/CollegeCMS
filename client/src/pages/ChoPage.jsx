@@ -30,7 +30,7 @@ export default function CHOPage() {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState(null); // cho object
 
-  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dhjp4nolc/upload';
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dhjp4nolc/raw/upload';
   const UPLOAD_PRESET = 'my_preset_name';
   const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

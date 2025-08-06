@@ -267,13 +267,11 @@ export default function StudentsList() {
           />
           {searchInput && (
             <button type="button" onClick={() => setSearchInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 hover:text-red-500">
-              <XCircle className="w-5 h-5" />
             </button>
           )}
           <button
             type="submit"
-            className="ml-2 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow"
-          >
+            className="ml-2 px-4 py-2 bg-[var(--accent)] text-[var(--primary)] rounded-lg font-semibold hover:bg-[var(--accent)]/90 transition-colors shadow">
             Search
           </button>
         </form>
