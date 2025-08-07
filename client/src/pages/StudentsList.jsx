@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from '../api/axios';
 import { Filter, Search, Users, UserCheck, UserX, TrendingUp, XCircle, Loader2 } from 'lucide-react';
 import { Eye } from 'lucide-react';
+import useAuthStore from '../store/authStore';
 
 const statIcons = [
   Users,
@@ -17,6 +18,7 @@ const statColors = [
 ];
 
 export default function StudentsList() {
+  const user = useAuthStore((s) => s.user);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -25,6 +27,7 @@ export default function StudentsList() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
+  const [showMyStudents, setShowMyStudents] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     finalized: 0,
@@ -59,9 +62,19 @@ export default function StudentsList() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+        console.log('🔍 Debug - User data:', user);
+        console.log('🔍 Debug - ShowMyStudents:', showMyStudents);
+        console.log('🔍 Debug - Mentoring Groups:', user?.mentoringGroups);
+        
+        const statsParams = showMyStudents && user?.mentoringGroups?.length > 0 
+          ? { mentoringGroups: user.mentoringGroups.join(',') }
+          : {};
+        
+        console.log('🔍 Debug - Stats params:', statsParams);
+        
         const [filtersRes, statsRes] = await Promise.all([
           axios.get('/api/students/filters'),
-          axios.get('/api/students/stats')
+          axios.get('/api/students/stats', { params: statsParams })
         ]);
         setFilterOptions(filtersRes.data.data);
         setStats(statsRes.data.data);
@@ -70,30 +83,43 @@ export default function StudentsList() {
       }
     };
     fetchInitialData();
-  }, []);
+  }, [showMyStudents, user?.mentoringGroups]);
 
   // Fetch students (paginated, filtered)
   const fetchStudents = useCallback(async (reset = false, customPage = 1, customFilters = filters) => {
     setLoading(true);
     try {
       const params = { ...customFilters, page: customPage, limit: 20 };
+      
+      // Add mentoring groups filter if "My Students" is active
+      if (showMyStudents && user?.mentoringGroups?.length > 0) {
+        params.mentoringGroups = user.mentoringGroups.join(',');
+        console.log('🔍 Debug - Adding mentoring groups to params:', user.mentoringGroups);
+      }
+      
+      console.log('🔍 Debug - Fetch students params:', params);
+      
       const res = await axios.get('/api/students/list', { params });
       const newStudents = res.data.data.students;
+      console.log('🔍 Debug - Received students count:', newStudents.length);
+      console.log('🔍 Debug - First few students:', newStudents.slice(0, 3));
+      
       setStudents(prev => reset ? newStudents : [...prev, ...newStudents]);
       setHasMore(res.data.data.page < res.data.data.totalPages);
       setPage(res.data.data.page);
     } catch (err) {
+      console.error('🔍 Debug - Error fetching students:', err);
       if (reset) setStudents([]);
       setHasMore(false);
     }
     setLoading(false);
-  }, [filters]);
+  }, [filters, showMyStudents, user?.mentoringGroups]);
 
   // Initial and filter change load
   useEffect(() => {
     setPage(1);
     fetchStudents(true, 1, filters);
-  }, [filters, fetchStudents]);
+  }, [filters, fetchStudents, showMyStudents]);
 
   // Infinite scroll observer
   const lastStudentRef = useCallback(node => {
@@ -133,6 +159,12 @@ export default function StudentsList() {
     setLoading(true);
     try {
       const params = { ...filters, search: searchInput, page: 1, limit: 20 };
+      
+      // Add mentoring groups filter if "My Students" is active
+      if (showMyStudents && user?.mentoringGroups?.length > 0) {
+        params.mentoringGroups = user.mentoringGroups.join(',');
+      }
+      
       const res = await axios.get('/api/students/list', { params });
       setStudents(res.data.data.students);
       setHasMore(res.data.data.page < res.data.data.totalPages);
@@ -154,10 +186,21 @@ export default function StudentsList() {
     fetchStudents(true, 1, filters);
   };
 
+  // Toggle My Students filter
+  const handleToggleMyStudents = () => {
+    console.log('🔍 Debug - Toggling My Students. Current state:', showMyStudents);
+    console.log('🔍 Debug - User mentoring groups:', user?.mentoringGroups);
+    setShowMyStudents(!showMyStudents);
+    setPage(1);
+    setSearchInput("");
+    setSearch("");
+  };
+
   // Clear all (filters and search)
   const handleClearAll = () => {
     setSearchInput("");
     setSearch("");
+    setShowMyStudents(false);
     setFilters({
       branch: '',
       updatedGroup: '',
@@ -244,14 +287,23 @@ export default function StudentsList() {
   return (
     <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] px-2 sm:px-6 py-8">
       {/* Summary Section */}
-      <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 top-0 z-10 bg-[var(--primary)]/80 backdrop-blur-md py-2 rounded-xl">
-        {statData.map((stat, idx) => (
-          <div key={stat.label} className={`flex flex-col items-center justify-center rounded-xl shadow-sm p-4 ${stat.color} bg-opacity-30`}>
-            <stat.icon className="w-7 h-7 mb-2" />
-            <div className="text-lg font-bold">{stat.value}</div>
-            <div className="text-xs font-medium opacity-80">{stat.label}</div>
+      <div className="max-w-6xl mx-auto mb-8">
+        {showMyStudents && user?.mentoringGroups?.length > 0 && (
+          <div className="mb-4 p-3 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-lg text-center">
+            <span className="text-[var(--accent)] font-semibold">
+              📚 Showing students from your mentoring groups: {user.mentoringGroups.join(', ')}
+            </span>
           </div>
-        ))}
+        )}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 top-0 z-10 bg-[var(--primary)]/80 backdrop-blur-md py-2 rounded-xl">
+          {statData.map((stat, idx) => (
+            <div key={stat.label} className={`flex flex-col items-center justify-center rounded-xl shadow-sm p-4 ${stat.color} bg-opacity-30`}>
+              <stat.icon className="w-7 h-7 mb-2" />
+              <div className="text-lg font-bold">{stat.value}</div>
+              <div className="text-xs font-medium opacity-80">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
@@ -260,7 +312,7 @@ export default function StudentsList() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--accent)]/70 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by name, roll, email, branch, group, cluster, specialization, campus..."
+            placeholder="Search by name, roll, email..."
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
@@ -275,6 +327,24 @@ export default function StudentsList() {
             Search
           </button>
         </form>
+        
+        {/* My Students Button */}
+        {user?.mentoringGroups?.length > 0 && (
+          <button
+            type="button"
+            onClick={handleToggleMyStudents}
+            className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow ${
+              showMyStudents 
+                ? 'bg-[var(--accent)] text-[var(--primary)]' 
+                : 'border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--primary)]'
+            }`}
+            title={`My Groups: ${user.mentoringGroups.join(', ')}`}
+          >
+            <Users className="h-5 w-5" />
+            My Students {showMyStudents && `(${user.mentoringGroups.length} groups)`}
+          </button>
+        )}
+        
         <button
           type="button"
           onClick={() => setShowFilter(true)}

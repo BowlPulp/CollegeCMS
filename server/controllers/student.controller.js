@@ -101,7 +101,8 @@ exports.listStudents = asyncHandler(async (req, res) => {
     specialization,
     campus,
     finalStatus,
-    search
+    search,
+    mentoringGroups
   } = req.query;
   page = parseInt(page);
   limit = parseInt(limit);
@@ -112,6 +113,10 @@ exports.listStudents = asyncHandler(async (req, res) => {
   if (specialization) filter.specialization = specialization;
   if (campus) filter.campus = campus;
   if (finalStatus !== undefined && finalStatus !== '') filter.finalStatus = finalStatus === 'true';
+  if (mentoringGroups) {
+    const groups = mentoringGroups.split(',').map(g => g.trim());
+    filter.updatedGroup = { $in: groups };
+  }
   if (search) {
     filter.$or = [
       { studentName: { $regex: search, $options: 'i' } },
@@ -134,8 +139,16 @@ exports.listStudents = asyncHandler(async (req, res) => {
 
 // Get student statistics from entire database
 exports.getStudentStats = asyncHandler(async (req, res) => {
-  const total = await Student.countDocuments({});
-  const finalized = await Student.countDocuments({ finalStatus: true });
+  const { mentoringGroups } = req.query;
+  const filter = {};
+  
+  if (mentoringGroups) {
+    const groups = mentoringGroups.split(',').map(g => g.trim());
+    filter.updatedGroup = { $in: groups };
+  }
+  
+  const total = await Student.countDocuments(filter);
+  const finalized = await Student.countDocuments({ ...filter, finalStatus: true });
   const pending = total - finalized;
   const percentFinalized = total > 0 ? ((finalized / total) * 100).toFixed(1) : '0.0';
 

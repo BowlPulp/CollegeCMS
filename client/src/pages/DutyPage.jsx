@@ -80,12 +80,12 @@ export default function DutyPage() {
   // New state to toggle All Duties view mode
   const [allDutiesView, setAllDutiesView] = useState('table'); // 'table' or 'list'
 
-  // Compute current week dates for date selector in Assign Duty
-  const [weekStart] = getWeekRange();
-  const weekDates = weekDaysFull.map((day, idx) => {
-    const dayObj = weekStart.add(idx, 'day');
+  // Compute next 7 days for date selector in Assign Duty
+  const today = dayjs();
+  const weekDates = Array.from({ length: 7 }).map((_, idx) => {
+    const dayObj = today.add(idx, 'day');
     return {
-      day,
+      day: dayObj.format('dddd'),
       label: dayObj.format('MMM D'),
       iso: dayObj.format('YYYY-MM-DD'),
     };
@@ -165,7 +165,18 @@ export default function DutyPage() {
   // Form handlers
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm(prev => {
+      const newForm = { ...prev, [name]: value };
+      
+      // If start time is changed, reset end time if it's now invalid
+      if (name === 'startTime' && value && prev.endTime) {
+        if (value >= prev.endTime) {
+          newForm.endTime = '';
+        }
+      }
+      
+      return newForm;
+    });
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
     if (successMsg) setSuccessMsg('');
   };
@@ -212,6 +223,12 @@ export default function DutyPage() {
     setForm(prev => ({ ...prev, assignedTo: prev.assignedTo.filter(e => e !== email) }));
   };
 
+  // Get filtered end time options based on start time
+  const getEndTimeOptions = (startTime) => {
+    if (!startTime) return timeOptions;
+    return timeOptions.filter(time => time > startTime);
+  };
+
   // Validation
   const validateForm = () => {
     const errors = {};
@@ -221,6 +238,9 @@ export default function DutyPage() {
     if (!form.dates.length) errors.dates = 'Please select at least one date.';
     if (!form.startTime) errors.startTime = 'Start time is required.';
     if (!form.endTime) errors.endTime = 'End time is required.';
+    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+      errors.endTime = 'End time must be after start time.';
+    }
     if (!form.assignedTo.length) errors.assignedTo = 'Please assign at least one teacher.';
     return errors;
   };
@@ -733,7 +753,7 @@ export default function DutyPage() {
 
         {/* Select Dates */}
         <section>
-          <h3 className="mb-2 text-lg font-semibold border-b border-[var(--accent)]/50 pb-1">Select Date(s) (Current Week)</h3>
+          <h3 className="mb-2 text-lg font-semibold border-b border-[var(--accent)]/50 pb-1">Select Date(s) (Next 7 Days)</h3>
           <div className="flex flex-wrap gap-3">
             {weekDates.map(({ day, label, iso }) => (
               <button
@@ -791,11 +811,15 @@ export default function DutyPage() {
                 className={`w-full rounded-lg border p-3 bg-[var(--primary)] text-[var(--neutral)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition ${
                   formErrors.endTime ? 'border-red-500' : 'border-[var(--accent)]/50'
                 }`}
+                disabled={!form.startTime}
               >
-                <option value="">Select end</option>
-                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="">{form.startTime ? 'Select end' : 'Select start time first'}</option>
+                {getEndTimeOptions(form.startTime).map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               {formErrors.endTime && <p className="mt-1 text-red-400 text-sm">{formErrors.endTime}</p>}
+              {form.startTime && getEndTimeOptions(form.startTime).length === 0 && (
+                <p className="mt-1 text-yellow-400 text-sm">No valid end times available for this start time.</p>
+              )}
             </div>
           </div>
         </section>
