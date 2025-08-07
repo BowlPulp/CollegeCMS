@@ -40,6 +40,8 @@ app.use('/api/students', require('./routers/student.router'));
 app.use('/api/chos', require('./routers/cho.router'));
 app.use('/api/events', require('./routers/event.router'));
 app.use('/api/duties', dutyRouter);
+
+app.use('/api/timetables', require('./routers/timetable.router'));
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
