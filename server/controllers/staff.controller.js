@@ -1,9 +1,15 @@
 const Teacher = require('../models/staff.model');
+const bcrypt = require('bcrypt');
 
 // Create (Add) Teacher
 exports.createTeacher = async (req, res) => {
   try {
-    const teacher = new Teacher(req.body);
+    const { password, ...rest } = req.body;
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const teacher = new Teacher({ ...rest, password: hashedPassword });
     await teacher.save();
     res.status(201).json(teacher);
   } catch (error) {
@@ -77,15 +83,27 @@ exports.filterOptions = async (req, res) => {
 exports.bulkUpload = async (req, res) => {
   try {
     const arr = req.body.teachers;
-    if (!Array.isArray(arr)) return res.status(400).json({ error: "Data must be teachers array" });
-    // (Hash passwords/normalize if required)
-    // Insert and error handling
-    const result = await Teacher.insertMany(arr, { ordered: false });
+    if (!Array.isArray(arr)) {
+      return res.status(400).json({ error: "Data must be teachers array" });
+    }
+
+    // Hash passwords for each teacher
+    const teachersWithHashedPasswords = await Promise.all(
+      arr.map(async (teacher) => {
+        if (teacher.password) {
+          teacher.password = await bcrypt.hash(teacher.password, 10);
+        }
+        return teacher;
+      })
+    );
+
+    const result = await Teacher.insertMany(teachersWithHashedPasswords, { ordered: false });
     res.json({ inserted: result.length });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
+
 
 
 // Get Total Verified Teachers with Role including "teacher"
