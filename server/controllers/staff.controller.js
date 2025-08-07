@@ -86,3 +86,32 @@ exports.bulkUpload = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+
+// Get Total Verified Teachers with Role including "teacher"
+exports.getVerifiedTeacherCount = async (req, res) => {
+  try {
+    const count = await Teacher.countDocuments({
+      role: { $regex: /teacher/i }, // case-insensitive regex match
+      isVerified: true
+    });
+
+    res.json({ totalVerifiedTeachers: count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getVerifiedAdminCount = async (req, res) => {
+  try {
+    const count = await Teacher.countDocuments({
+      role: { $regex: /admin/i }, // case-insensitive regex match
+      isVerified: true
+    });
+
+    res.json({ totalVerifiedAdmins: count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

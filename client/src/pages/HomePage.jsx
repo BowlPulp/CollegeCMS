@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
-  Users, 
-  UserCheck, 
-  UserX, 
-  TrendingUp, 
-  GraduationCap, 
-  BookOpen,
-  BarChart3,
-  Award
+import {
+  Users,
+  UserCheck,
+  UserX,
+  TrendingUp,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
 import axios from '../api/axios';
 
@@ -17,7 +15,6 @@ export default function HomePage() {
   const { theme } = useTheme();
   const location = useLocation();
 
-  // Real stats state
   const [overview, setOverview] = useState({
     total: 0,
     finalized: 0,
@@ -26,33 +23,42 @@ export default function HomePage() {
     groupWise: {},
     specializationWise: {}
   });
-  const [loadingStats, setLoadingStats] = useState(true);
 
-  // Handle scrolling to sections when navigating from other pages
+  const [verifiedTeachers, setVerifiedTeachers] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [verifiedAdmins, setVerifiedAdmins] = useState(0);
   useEffect(() => {
     if (location.state?.scrollToFeatures) {
-      const section = document.getElementById('features');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
+      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
     }
     if (location.state?.scrollToAbout) {
-      const section = document.getElementById('about');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
+      document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [location]);
 
-  // Fetch real stats
   useEffect(() => {
     setLoadingStats(true);
-    axios.get('/api/students/overview')
-      .then(res => setOverview(res.data.data))
-      .finally(() => setLoadingStats(false));
+    const fetchData = async () => {
+      try {
+        const [studentsRes, teachersRes, adminRes] = await Promise.all([
+          axios.get('/api/students/overview'),
+          axios.get('/api/teachers/overview'),
+          axios.get('/api/teachers/adminsoverview')
+        ]);
+
+        setOverview(studentsRes.data.data);
+        setVerifiedTeachers(teachersRes.data.totalVerifiedTeachers || 0);
+        setVerifiedAdmins(adminRes.data.totalVerifiedAdmins || 0);
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Real stats data
   const stats = [
     {
       title: 'Total Students',
@@ -88,15 +94,15 @@ export default function HomePage() {
     },
     {
       title: 'Total Teachers',
-      value: '312', // Still hardcoded
+      value: loadingStats ? '...' : verifiedTeachers,
       icon: GraduationCap,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-50',
       darkBgColor: 'bg-indigo-900/20'
     },
     {
-      title: 'Total Trainers',
-      value: '89', // Still hardcoded
+      title: 'Total Admin',
+      value: loadingStats ? '...' : verifiedAdmins,
       icon: BookOpen,
       color: 'text-orange-500',
       bgColor: 'bg-orange-50',
@@ -107,32 +113,13 @@ export default function HomePage() {
   const StatCard = ({ stat }) => {
     const Icon = stat.icon;
     return (
-      <div className={`
-        bg-[var(--secondary)] 
-        rounded-xl 
-        p-6 
-        shadow-lg 
-        hover:shadow-xl 
-        transition-all 
-        duration-300 
-        hover:scale-105 
-        border 
-        border-[var(--accent)]/10
-      `}>
+      <div className="bg-[var(--secondary)] rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-[var(--accent)]/10">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[var(--neutral)]/70 text-sm font-medium mb-1">
-              {stat.title}
-            </p>
-            <p className="text-3xl font-bold text-[var(--neutral)]">
-              {stat.value}
-            </p>
+            <p className="text-[var(--neutral)]/70 text-sm font-medium mb-1">{stat.title}</p>
+            <p className="text-3xl font-bold text-[var(--neutral)]">{stat.value}</p>
           </div>
-          <div className={`
-            p-3 
-            rounded-full 
-            ${theme === 'dark' ? stat.darkBgColor : stat.bgColor}
-          `}>
+          <div className={`p-3 rounded-full ${theme === 'dark' ? stat.darkBgColor : stat.bgColor}`}>
             <Icon className={`h-6 w-6 ${stat.color}`} />
           </div>
         </div>
@@ -140,13 +127,13 @@ export default function HomePage() {
     );
   };
 
-  // Group-wise and specialization-wise cards
   const groupCards = Object.entries(overview.groupWise).map(([group, count]) => (
     <div key={group} className="bg-[var(--secondary)] rounded-xl p-4 text-center border border-[var(--accent)]/10">
       <div className="text-lg font-semibold text-[var(--accent)]">Group {group}</div>
       <div className="text-2xl font-bold text-[var(--neutral)]">{count}</div>
     </div>
   ));
+
   const specCards = Object.entries(overview.specializationWise).map(([spec, count]) => (
     <div key={spec} className="bg-[var(--secondary)] rounded-xl p-4 text-center border border-[var(--accent)]/10">
       <div className="text-lg font-semibold text-[var(--accent)]">{spec}</div>
@@ -155,11 +142,11 @@ export default function HomePage() {
   ));
 
   return (
-    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)] ">
+    <div className="min-h-screen bg-[var(--primary)] text-[var(--neutral)]">
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-[var(--accent)]  bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-[var(--accent)] bg-clip-text text-transparent">
             ChitkaraCMS
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-[var(--neutral)]/80 max-w-3xl mx-auto">
@@ -175,12 +162,8 @@ export default function HomePage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-[var(--neutral)]">
-              System Overview
-            </h2>
-            <p className="text-[var(--neutral)]/70 text-lg">
-              Real-time statistics and insights from our management system
-            </p>
+            <h2 className="text-3xl font-bold mb-4 text-[var(--neutral)]">System Overview</h2>
+            <p className="text-[var(--neutral)]/70 text-lg">Real-time statistics and insights from our management system</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
@@ -193,7 +176,9 @@ export default function HomePage() {
           <div className="mb-8">
             <h3 className="text-xl font-bold mb-4 text-[var(--neutral)]">Group-wise Students</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {groupCards.length > 0 ? groupCards : <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>}
+              {groupCards.length > 0 ? groupCards : (
+                <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>
+              )}
             </div>
           </div>
 
@@ -201,7 +186,9 @@ export default function HomePage() {
           <div>
             <h3 className="text-xl font-bold mb-4 text-[var(--neutral)]">Specialization-wise Students</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {specCards.length > 0 ? specCards : <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>}
+              {specCards.length > 0 ? specCards : (
+                <div className="col-span-full text-center text-[var(--neutral)]/60">No data</div>
+              )}
             </div>
           </div>
         </div>
