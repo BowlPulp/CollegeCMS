@@ -17,6 +17,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage"
 import EventNewsPage from "./pages/EventNewsPage"
 import ChoPage from "./pages/ChoPage"
 import DutyPage from './pages/DutyPage';
+import ManageTeachers from "./pages/admin/ManageTeachers"
 
 // PrivateRoute for role-based protection
 function PrivateRoute({ children, allowedRoles }) {
@@ -62,7 +63,7 @@ function App() {
       <Route element={<PrivateRoute allowedRoles={["admin"]}><AdminLayout /></PrivateRoute>}>
         <Route path="/admin/home" element={<HomePage />} />
         <Route path="/admin/manage-students" element={<ManageStudents />} />
-        <Route path="/admin/manage-teachers" element={<div className='p-8 text-center text-xl'>Manage Teachers (Admin Only)</div>} />
+        <Route path="/admin/manage-teachers" element={<ManageTeachers/>} />
       </Route>
 
       {/* All authenticated routes with normal Navbar */}

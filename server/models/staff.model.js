@@ -44,10 +44,12 @@ const staffSchema = new mongoose.Schema({
   otpExpiry: {
     type: Date,
   },
+  designation: { type: String },
   isVerified: {
     type: Boolean,
     default: false,
   },
+   mentoringGroups: [{ type: String }],
   pinnedSheets: [{
     type: String, // Sheet ID
   }],
