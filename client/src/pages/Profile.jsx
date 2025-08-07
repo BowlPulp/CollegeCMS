@@ -136,7 +136,7 @@ export default function Profile() {
                       <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
                         {index + 1}
                       </div>
-                      <span className="text-[var(--neutral)] font-medium">{group}</span>
+                      <span className="text-[var(--neutral) font-medium">{group}</span>
                     </div>
                   ))}
                 </div>
