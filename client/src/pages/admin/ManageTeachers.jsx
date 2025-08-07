@@ -85,10 +85,10 @@ const ManageTeachers = () => {
     try {
       const params = { ...customFilters, page: customPage, limit: 20 };
       const res = await axios.get(`${API_BASE}/api/teachers/list`, { params });
-      const newTeachers = res.data.data.teachers;
+      const newTeachers = res.data.data?.teachers || res.data.teachers || {};
       setTeachers(prev => reset ? newTeachers : [...prev, ...newTeachers]);
-      setHasMore(res.data.data.page < res.data.data.totalPages);
-      setPage(res.data.data.page);
+      setHasMore(res.data.data?.page < res.data.data?.totalPages);
+      setPage(res.data.data?.page);
     } catch (err) {
       if (reset) setTeachers([]);
       setHasMore(false);
@@ -98,11 +98,9 @@ const ManageTeachers = () => {
 
   // Initial and filter change load
 useEffect(() => {
-  if (activeTab === "manage") {
     setPage(1);
-    fetchTeachers(true);
-  }
-}, [activeTab, fetchTeachers]);
+    fetchTeachers(true, 1, filters);
+}, [filters, fetchTeachers]);
 
 
   // Infinite scroll observer
@@ -165,7 +163,6 @@ useEffect(() => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-
   try {
     const response = await axios.post(`${API_BASE}/api/teachers`, {
       name: formData.name,
@@ -190,9 +187,9 @@ const handleSubmit = async (e) => {
       contactNo: '',
       designation: '',
     });
+    fetchTeachers();
     console.log("this is form data ",FormData);
 
-    fetchTeachers();
   } catch (error) {
     console.error('Error creating teacher:', error.response?.data || error.message);
   }
