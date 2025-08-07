@@ -59,6 +59,12 @@ export default function Navbar() {
             Students List
           </Link>
           <Link 
+            to='/teachers' 
+            className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] transition-colors duration-200"
+          >
+            Teachers List
+          </Link>
+          <Link 
             to='/timetable' 
             className="px-3 py-2 rounded-md text-sm font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] transition-colors duration-200"
           >
@@ -215,6 +221,13 @@ export default function Navbar() {
               onClick={closeMenus}
             >
               Students List
+            </Link>
+            <Link 
+              to='/teachers' 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--secondary)] hover:text-[var(--accent)] transition-colors duration-200"
+              onClick={closeMenus}
+            >
+              Teachers List
             </Link>
             <Link 
               to='/timetable' 

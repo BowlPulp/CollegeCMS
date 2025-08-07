@@ -18,6 +18,7 @@ import EventNewsPage from "./pages/EventNewsPage"
 import ChoPage from "./pages/ChoPage"
 import DutyPage from './pages/DutyPage';
 import ManageTeachers from "./pages/admin/ManageTeachers"
+import TeacherList from "./pages/TeacherList";
 
 // PrivateRoute for role-based protection
 function PrivateRoute({ children, allowedRoles }) {
@@ -71,6 +72,7 @@ function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/sheet" element={<SheetManager />} />
         <Route path="/students" element={<StudentsList />} />
+        <Route path="/teachers" element={<TeacherList />} />
         <Route path="/timetable" element={<TimeTable />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/load" element={<Loader />} />
