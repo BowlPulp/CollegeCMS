@@ -15,6 +15,7 @@ export default function AdminNavbar() {
   const toggleProfile = () => setProfileOpen((v) => !v);
   const closeProfile = () => setProfileOpen(false);
   const handleLogout = async () => {
+    if (!window.confirm('Are you sure you want to logout?')) return;
     await logout();
     closeProfile();
     navigate('/');
