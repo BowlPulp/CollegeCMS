@@ -25,7 +25,7 @@ Idea originally proposed to us by our mentor, who wanted a Cluster Management Sy
 
 | Color             | Hex                                                                |
 | ----------------- | ------------------------------------------------------------------ |
-| Red Color | ![#FF0000](https://via.placeholder.com/10/FF0000?text=+) #FF0000 |
-| Black Color | ![#000000](https://via.placeholder.com/10/000000?text=+) #000000 |
-| White Color | ![#FFFFFF](https://via.placeholder.com/10/FFFFFF?text=+) #FFFFFF |
+| Red Color | ! #FF0000 |
+| Black Color | #000000 |
+| White Color | #FFFFFF |
 
